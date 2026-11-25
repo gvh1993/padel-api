@@ -1,7 +1,7 @@
 namespace Padel.Domain.Common;
 
-public abstract record DomainEvent : IDomainEvent
-{
-    public Guid Id { get; init; } = Guid.NewGuid();
-    public DateTimeOffset OccurredOn { get; init; } = DateTimeOffset.UtcNow;
-}
+/// <summary>
+/// Something that happened to an aggregate. Events are stored in the outbox together with the change
+/// (same transaction) and handled after the commit; the outbox records when they occurred.
+/// </summary>
+public abstract record DomainEvent : IDomainEvent;

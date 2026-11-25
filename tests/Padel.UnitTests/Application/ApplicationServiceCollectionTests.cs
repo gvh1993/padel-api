@@ -6,6 +6,7 @@ using Padel.Application;
 using Padel.Application.Common;
 using Padel.Application.Common.Behaviors;
 using Padel.Application.Common.Messaging;
+using Padel.Application.Common.Notifications;
 using Padel.Application.Features.Bookings;
 using Padel.Application.Features.Courts;
 using Padel.Application.Features.Members;
@@ -38,6 +39,7 @@ public class ApplicationServiceCollectionTests
         services.AddScoped<IBookingRepository, InMemoryBookingRepository>();
         services.AddScoped<IUnitOfWork>(_ => new FakeUnitOfWork());
         services.AddScoped<ICurrentUser>(_ => FakeCurrentUser.Admin());
+        services.AddSingleton<INotificationSender, RecordingNotificationSender>();
         configure?.Invoke(services);
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }

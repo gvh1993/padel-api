@@ -313,4 +313,18 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await response.ReadProblemAsync()).ErrorCode.Should().Be("Booking.OutsideOpeningHours");
     }
+
+    [Test]
+    public async Task CreateAndCancelBooking_Should_NotifyTheMemberThroughTheOutbox()
+    {
+        var member = await RegisterMemberAsync();
+        var booking = await BookAsync(member, await CreateCourtAsync(), FutureSlot());
+
+        var confirmation = await Notifications.WaitForAsync(n => n.To == member.Email && n.Subject == "Booking confirmed");
+        await As(member).Bookings.Cancel(booking.Id, new CancelBookingRequest { Reason = "rain" });
+        var cancellation = await Notifications.WaitForAsync(n => n.To == member.Email && n.Subject == "Booking cancelled");
+
+        confirmation.Body.Should().Contain("is confirmed");
+        cancellation.Body.Should().Contain("is cancelled");
+    }
 }

@@ -2,6 +2,9 @@ using DotNet.Testcontainers.Builders;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Padel.Application.Common.Notifications;
 using Testcontainers.Keycloak;
 using Testcontainers.PostgreSql;
 using TUnit.Core.Interfaces;
@@ -33,6 +36,9 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
 
     public KeycloakTokens Tokens { get; private set; } = null!;
 
+    /// <summary>Notifications the API sent (through the outbox).</summary>
+    public RecordingNotificationSender Notifications { get; } = new();
+
     public async Task InitializeAsync()
     {
         await Task.WhenAll(_database.StartAsync(), _keycloak.StartAsync());
@@ -58,6 +64,9 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
         builder.UseSetting("Keycloak:RequireHttpsMetadata", "false");
         builder.UseSetting("Database:ApplyMigrationsOnStartup", "true");
         builder.UseSetting("OpenApi:Enabled", "true");
+        builder.UseSetting("Outbox:PollingInterval", "00:00:00.100");
+
+        builder.ConfigureTestServices(services => services.AddSingleton<INotificationSender>(Notifications));
     }
 
     public override async ValueTask DisposeAsync()

@@ -1,25 +1,21 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Padel.Application.Common;
-using Padel.Application.Common.Messaging;
 using Padel.Domain.Common;
+using Padel.Infrastructure.Persistence.Outbox;
 
 namespace Padel.Infrastructure.Persistence;
 
 /// <summary>
-/// Dispatches domain events before committing, so handlers run inside the same transaction:
-/// either the changes and every handler's side effects are saved, or nothing is.
-/// Handlers must therefore only change data in this database; external side effects need an outbox.
+/// Saves the changes together with the domain events they raised (the transactional outbox): either
+/// both are stored, or neither. The <see cref="Outbox.OutboxProcessor"/> hands the events to their
+/// handlers after the commit, so a failing handler (e.g. a mail server that is down) never undoes a booking.
 /// </summary>
-public sealed class PadelUnitOfWork(
-    PadelDbContext context,
-    IDomainEventPublisher domainEventPublisher) : IUnitOfWork
+public sealed class PadelUnitOfWork(PadelDbContext context, TimeProvider timeProvider) : IUnitOfWork
 {
-    private const int MaxDispatchRounds = 10;
-
     public async Task<Result> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await DispatchDomainEventsAsync(cancellationToken);
+        StoreDomainEvents();
 
         try
         {
@@ -40,30 +36,18 @@ public sealed class PadelUnitOfWork(
         }
     }
 
-    private async Task DispatchDomainEventsAsync(CancellationToken cancellationToken)
+    private void StoreDomainEvents()
     {
-        // Handlers may raise new events, so keep dispatching until none are left.
-        for (var round = 0; round < MaxDispatchRounds; round++)
+        var entities = context.ChangeTracker.Entries<EntityWithDomainEvents>()
+            .Select(entry => entry.Entity)
+            .Where(entity => entity.DomainEvents.Count > 0)
+            .ToList();
+
+        var occurredOn = timeProvider.GetUtcNow();
+        foreach (var entity in entities)
         {
-            var entities = context.ChangeTracker.Entries<EntityWithDomainEvents>()
-                .Select(entry => entry.Entity)
-                .Where(entity => entity.DomainEvents.Count > 0)
-                .ToList();
-
-            if (entities.Count == 0)
-            {
-                return;
-            }
-
-            var events = entities.SelectMany(entity => entity.DomainEvents).ToList();
-            entities.ForEach(entity => entity.ClearDomainEvents());
-
-            foreach (var domainEvent in events)
-            {
-                await domainEventPublisher.PublishAsync(domainEvent, cancellationToken);
-            }
+            context.OutboxMessages.AddRange(entity.DomainEvents.Select(domainEvent => OutboxSerializer.ToMessage(domainEvent, occurredOn)));
+            entity.ClearDomainEvents();
         }
-
-        throw new InvalidOperationException($"Domain events were still being raised after {MaxDispatchRounds} dispatch rounds.");
     }
 }

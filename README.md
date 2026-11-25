@@ -82,6 +82,14 @@ Endpoints implement `IEndpoint` and are mapped automatically at start-up. Reques
 - Handlers, validators and endpoints are sealed; endpoints are internal.
 - Entities have no public setters.
 
+### Domain events: transactional outbox
+
+Aggregates raise domain events, such as `BookingCreated` and `BookingCancelled`. The unit of work stores them in the `OutboxMessages` table in the same transaction as the change, so either both are saved or neither is.
+
+The `OutboxProcessor` (a background service) then hands them to their handlers after the commit. Several instances can run at once because batches are locked with `FOR UPDATE SKIP LOCKED`. A failing handler is retried, up to `Outbox:MaxAttempts` times; the error is kept in `LastError`.
+
+The booking handlers send a confirmation and a cancellation notice to the member, with the time in the club's time zone. `LoggingNotificationSender` only writes them to the log. Replace it with a real email sender once the club has one.
+
 ### Errors: results as C# unions
 
 Expected failures are not exceptions. Results are C# 15 union types:

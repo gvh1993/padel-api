@@ -17,7 +17,7 @@ partial class PadelDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125203857_MemberIdentity";
+    public override string LastMigrationId => "20261125204226_Outbox";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -185,6 +185,42 @@ partial class PadelDbContextModelSnapshot : ModelSnapshot
                     .HasFilter("\"IdentityId\" IS NOT NULL");
 
                 b.ToTable("Members");
+            });
+
+        modelBuilder.Entity("Padel.Infrastructure.Persistence.Outbox.OutboxMessage", b =>
+            {
+                b.Property<Guid>("Id")
+                    .HasColumnType("uuid");
+
+                b.Property<int>("Attempts")
+                    .HasColumnType("integer");
+
+                b.Property<string>("LastError")
+                    .HasMaxLength(2000)
+                    .HasColumnType("character varying(2000)");
+
+                b.Property<DateTimeOffset>("OccurredOn")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<string>("Payload")
+                    .IsRequired()
+                    .HasColumnType("jsonb");
+
+                b.Property<DateTimeOffset?>("ProcessedOn")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<string>("Type")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("OccurredOn")
+                    .HasDatabaseName("IX_OutboxMessages_Unprocessed")
+                    .HasFilter("\"ProcessedOn\" IS NULL");
+
+                b.ToTable("OutboxMessages");
             });
 
         modelBuilder.Entity("Padel.Domain.Bookings.Booking", b =>

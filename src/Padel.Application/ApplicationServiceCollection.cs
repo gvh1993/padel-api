@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Padel.Application.Common.Behaviors;
 using Padel.Application.Common.Messaging;
+using Padel.Application.Features.Bookings.Notifications;
 using Padel.Application.Features.Members;
 using Padel.Domain.Bookings;
 
@@ -24,6 +25,7 @@ public static class ApplicationServiceCollection
 
         services.TryAddScoped<IRequestDispatcher, RequestDispatcher>();
         services.TryAddScoped<MemberIdentityResolver>();
+        services.TryAddScoped<BookingNotifications>();
         services.TryAddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.TryAddSingleton(TimeProvider.System);
 

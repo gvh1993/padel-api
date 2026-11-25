@@ -24,6 +24,8 @@ public abstract class IntegrationTestBase(PadelApiFactory factory)
 
     protected KeycloakTokens Tokens => factory.Tokens;
 
+    protected RecordingNotificationSender Notifications => factory.Notifications;
+
     protected static string UniqueEmail(string prefix = "member") => $"{prefix}-{Guid.NewGuid():N}@example.com";
 
     protected static string UniqueName(string prefix) => $"{prefix} {Guid.NewGuid():N}";

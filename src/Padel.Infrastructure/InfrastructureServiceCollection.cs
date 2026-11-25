@@ -1,14 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Padel.Application.Common;
+using Padel.Application.Common.Notifications;
 using Padel.Application.Features.Bookings;
 using Padel.Application.Features.Courts;
 using Padel.Application.Features.Members;
 using Padel.Infrastructure.Features.Bookings;
 using Padel.Infrastructure.Features.Courts;
 using Padel.Infrastructure.Features.Members;
+using Padel.Infrastructure.Notifications;
 using Padel.Infrastructure.Persistence;
+using Padel.Infrastructure.Persistence.Outbox;
 using Padel.Infrastructure.Telemetry;
 
 namespace Padel.Infrastructure;
@@ -29,6 +33,11 @@ public static class InfrastructureServiceCollection
         services.AddScoped<ICourtRepository, CourtRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IUnitOfWork, PadelUnitOfWork>();
+
+        // Domain events are stored with the change and handled after the commit.
+        services.AddOptions<OutboxOptions>().BindConfiguration(OutboxOptions.SectionName);
+        services.AddHostedService<OutboxProcessor>();
+        services.TryAddSingleton<INotificationSender, LoggingNotificationSender>();
 
         // "ready" is the readiness tag of the service defaults: no traffic until the database answers.
         services.AddHealthChecks().AddDbContextCheck<PadelDbContext>("database", tags: ["ready"]);
