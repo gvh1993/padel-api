@@ -8,10 +8,10 @@ var postgres = builder.AddPostgres("postgres")
 
 var database = postgres.AddDatabase("padel");
 
-// Fixed port, so the realm URL (token issuer) stays the same between runs. Aspire serves Keycloak over HTTPS
+// Fixed port (not the busy 8080), so the realm URL (token issuer) stays the same between runs. Aspire serves Keycloak over HTTPS
 // with the ASP.NET Core development certificate (`dotnet dev-certs https --trust`).
 // The realm is imported on first start; the data volume keeps users and their member_id attributes.
-var keycloak = builder.AddKeycloak("keycloak", port: 8080)
+var keycloak = builder.AddKeycloak("keycloak", port: 18080)
     .WithDataVolume()
     .WithRealmImport("./Realms")
     .WithLifetime(ContainerLifetime.Persistent);

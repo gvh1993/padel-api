@@ -23,7 +23,7 @@ The Aspire AppHost starts PostgreSQL and Keycloak (realm `padel`), runs the migr
 | --- | --- |
 | API documentation (Scalar) | <http://localhost:5062/scalar>, or the link in the dashboard |
 | OpenAPI document | <http://localhost:5062/openapi/v1.json> |
-| Keycloak admin console | <https://localhost:8080>. The admin password is in the dashboard, under the `keycloak` resource's parameters. |
+| Keycloak admin console | <https://localhost:18080>. The admin password is in the dashboard, under the `keycloak` resource's parameters. |
 
 In Scalar, choose **Authorize** and sign in with a realm user:
 

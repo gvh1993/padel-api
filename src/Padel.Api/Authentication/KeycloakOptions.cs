@@ -9,7 +9,7 @@ public sealed class KeycloakOptions
 {
     public const string SectionName = "Keycloak";
 
-    /// <summary>The realm URL, e.g. <c>http://localhost:8080/realms/padel</c>. Used as token issuer and by the browser (Scalar).</summary>
+    /// <summary>The realm URL, e.g. <c>https://localhost:18080/realms/padel</c>. Used as token issuer and by the browser (Scalar).</summary>
     [Required]
     [Url]
     public string Authority { get; set; } = string.Empty;
