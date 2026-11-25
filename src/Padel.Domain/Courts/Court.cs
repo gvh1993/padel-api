@@ -27,13 +27,13 @@ public class Court : EntityWithDomainEvents
 
     public static Result<Court> Create(string? name, string? surface)
     {
-        var normalizedName = Normalize(name, "Court name");
+        var normalizedName = CreateName(name);
         if (normalizedName is not string validName)
         {
             return normalizedName.Error;
         }
 
-        var normalizedSurface = Normalize(surface, "Surface");
+        var normalizedSurface = CreateSurface(surface);
         if (normalizedSurface is not string validSurface)
         {
             return normalizedSurface.Error;
@@ -44,7 +44,7 @@ public class Court : EntityWithDomainEvents
 
     public Result Rename(string? name)
     {
-        var normalizedName = Normalize(name, "Court name");
+        var normalizedName = CreateName(name);
         if (normalizedName is not string validName)
         {
             return normalizedName.Error;
@@ -76,6 +76,12 @@ public class Court : EntityWithDomainEvents
         Status = CourtStatus.Retired;
         AddDomainEvent(new CourtRetired(Id));
     }
+
+    /// <summary>Validates and trims a court name.</summary>
+    public static Result<string> CreateName(string? value) => Normalize(value, "Court name");
+
+    /// <summary>Validates and trims a surface, e.g. <c>glass</c>.</summary>
+    public static Result<string> CreateSurface(string? value) => Normalize(value, "Surface");
 
     private static Result<string> Normalize(string? value, string label)
     {

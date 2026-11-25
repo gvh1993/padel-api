@@ -7,8 +7,8 @@ public sealed class RegisterMemberCommandValidator : AbstractValidator<RegisterM
 {
     public RegisterMemberCommandValidator()
     {
-        RuleFor(x => x.FirstName).ValidPersonName();
-        RuleFor(x => x.LastName).ValidPersonName();
+        RuleFor(x => x.FirstName).ValidFirstName();
+        RuleFor(x => x.LastName).ValidLastName();
         RuleFor(x => x.Email).ValidEmail();
         RuleFor(x => x.Phone).ValidPhone();
     }

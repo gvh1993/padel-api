@@ -10,9 +10,12 @@ public sealed class CreateBookingCommandValidator : AbstractValidator<CreateBook
         RuleFor(x => x.MemberId).NotEmpty();
         RuleFor(x => x.CourtId).NotEmpty();
         RuleFor(x => x.Start).NotEmpty();
-        RuleFor(x => x.End)
-            .GreaterThan(x => x.Start)
-            .Must((command, end) => end - command.Start >= TimeSlot.MinimumDuration && end - command.Start <= TimeSlot.MaximumDuration)
-            .WithMessage($"A booking must last between {TimeSlot.MinimumDuration.TotalMinutes} minutes and {TimeSlot.MaximumDuration.TotalHours} hours.");
+        RuleFor(x => x.End).Custom((end, context) =>
+        {
+            if (TimeSlot.Create(context.InstanceToValidate.Start, end) is Error error)
+            {
+                context.AddFailure(error.Description);
+            }
+        });
     }
 }

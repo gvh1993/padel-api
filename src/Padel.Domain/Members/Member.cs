@@ -87,10 +87,22 @@ public class Member : EntityWithDomainEvents
         AddDomainEvent(new MemberReactivated(Id));
     }
 
-    /// <summary>A phone number is optional; when given, it must have a valid number of digits.</summary>
-    private static Result ValidatePhone(string? phone)
+    /// <summary>
+    /// A phone number is optional. When given, it may only contain digits, spaces, '-', '(' and ')',
+    /// optionally after a leading '+', and must have a valid number of digits.
+    /// </summary>
+    public static Result ValidatePhone(string? phone)
     {
-        if (DigitsOf(phone) is { Length: < PhoneMinDigits or > PhoneMaxDigits })
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return Success.Instance;
+        }
+
+        var trimmed = phone.Trim();
+        var number = trimmed.StartsWith('+') ? trimmed[1..] : trimmed;
+        var allowedCharacters = number.All(c => char.IsDigit(c) || c is ' ' or '-' or '(' or ')');
+
+        if (!allowedCharacters || DigitsOf(phone) is { Length: < PhoneMinDigits or > PhoneMaxDigits })
         {
             return MemberErrors.InvalidPhone;
         }

@@ -7,6 +7,6 @@ public sealed class RenameCourtCommandValidator : AbstractValidator<RenameCourtC
 {
     public RenameCourtCommandValidator()
     {
-        RuleFor(x => x.Name).ValidCourtText();
+        RuleFor(x => x.Name).ValidCourtName();
     }
 }

@@ -50,6 +50,23 @@ public class MemberTests
     }
 
     [Test]
+    [Arguments("010-123 4567 ext")]
+    [Arguments("010+1234567")]
+    [Arguments("06.12345678")]
+    public void Given_PhoneWithInvalidCharacters_Should_Fail(string phone)
+    {
+        Register(phone).ShouldFail("may only contain digits").Is<ValidationError>();
+    }
+
+    [Test]
+    [Arguments("+31 (0)10-123 4567")]
+    [Arguments("0612345678")]
+    public void Given_PhoneInAllowedFormat_Should_Register(string phone)
+    {
+        Register(phone).ShouldSucceed();
+    }
+
+    [Test]
     public void Suspend_Should_BlockBookingStoreReasonAndRaiseMemberSuspended()
     {
         var member = CreateMember();

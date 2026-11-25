@@ -19,13 +19,13 @@ public sealed record FullName
     /// <summary>Validates and trims a first and last name.</summary>
     public static Result<FullName> Create(string? first, string? last)
     {
-        var firstName = Normalize(first, "First name", "FullName.FirstName");
+        var firstName = CreateFirstName(first);
         if (firstName is not string validFirstName)
         {
             return firstName.Error;
         }
 
-        var lastName = Normalize(last, "Last name", "FullName.LastName");
+        var lastName = CreateLastName(last);
         if (lastName is not string validLastName)
         {
             return lastName.Error;
@@ -33,6 +33,12 @@ public sealed record FullName
 
         return new FullName(validFirstName, validLastName);
     }
+
+    /// <summary>Validates and trims a first name on its own (used to report the field when validating requests).</summary>
+    public static Result<string> CreateFirstName(string? value) => Normalize(value, "First name", "FullName.FirstName");
+
+    /// <summary>Validates and trims a last name on its own.</summary>
+    public static Result<string> CreateLastName(string? value) => Normalize(value, "Last name", "FullName.LastName");
 
     private static Result<string> Normalize(string? value, string label, string code)
     {

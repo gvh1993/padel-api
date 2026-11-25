@@ -7,7 +7,7 @@ public sealed class CreateCourtCommandValidator : AbstractValidator<CreateCourtC
 {
     public CreateCourtCommandValidator()
     {
-        RuleFor(x => x.Name).ValidCourtText();
-        RuleFor(x => x.Surface).ValidCourtText();
+        RuleFor(x => x.Name).ValidCourtName();
+        RuleFor(x => x.Surface).ValidSurface();
     }
 }
