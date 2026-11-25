@@ -1,4 +1,6 @@
 using AwesomeAssertions;
+using NSubstitute;
+using Padel.Application.Common;
 using Padel.Application.Features.Bookings;
 using Padel.Domain.Bookings;
 using Padel.Domain.Common;
@@ -52,6 +54,22 @@ public class BookingHandlerTests
         error.Description.Should().Contain("already booked");
         _fixture.Bookings.Store.Should().ContainSingle();
         _fixture.UnitOfWork.SaveCount.Should().Be(0);
+    }
+
+    [Test]
+    public async Task CreateBooking_WhenADatabaseConstraintRejectsTheSave_ShouldReturnThatError()
+    {
+        // A concurrent request took the slot after the handler's own overlap check: the exclusion constraint catches it.
+        var member = _fixture.Add(MemberBuilder.New());
+        var court = _fixture.Add(CourtBuilder.New());
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(BookingErrors.SlotTaken);
+        var handler = new CreateBookingCommandHandler(
+            _fixture.Bookings, _fixture.Members, _fixture.Courts, unitOfWork, _fixture.CurrentUser, _fixture.Clock, _fixture.PolicyOptions);
+
+        var error = await handler.Handle(Command(member.Id, court.Id, Tomorrow10), CancellationToken.None).ShouldFail().Is<ConflictError>();
+
+        error.Code.Should().Be(BookingErrors.SlotTaken.Code);
     }
 
     [Test]

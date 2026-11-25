@@ -1,4 +1,5 @@
-using AwesomeAssertions;
+using NSubstitute;
+using Padel.Application.Common.Notifications;
 using Padel.Application.Features.Bookings.Notifications;
 using Padel.Domain.Bookings;
 using Padel.UnitTests.Builders;
@@ -12,7 +13,7 @@ public class BookingNotificationTests
     private static readonly DateTimeOffset Tomorrow10 = new(2026, 11, 26, 10, 0, 0, TimeSpan.Zero);
 
     private readonly HandlerFixture _fixture = new();
-    private readonly RecordingNotificationSender _sender = new();
+    private readonly INotificationSender _sender = Substitute.For<INotificationSender>();
 
     private BookingNotifications Notifications =>
         new(_fixture.Bookings, _fixture.Members, _fixture.Courts, _sender, _fixture.PolicyOptions);
@@ -26,10 +27,13 @@ public class BookingNotificationTests
 
         await new SendBookingConfirmation(Notifications).Handle(new BookingCreated(booking.Id, member.Id, court.Id), CancellationToken.None);
 
-        var notification = _sender.Sent.Should().ContainSingle().Subject;
-        notification.To.Should().Be("jan@example.com");
-        notification.Subject.Should().Be("Booking confirmed");
-        notification.Body.Should().Contain("Centre Court").And.Contain("from 11:00 to 12:00");
+        await _sender.Received(1).SendAsync(
+            Arg.Is<Notification>(n =>
+                n.To == "jan@example.com"
+                && n.Subject == "Booking confirmed"
+                && n.Body.Contains("Centre Court")
+                && n.Body.Contains("from 11:00 to 12:00")),
+            Arg.Any<CancellationToken>());
     }
 
     [Test]
@@ -40,7 +44,7 @@ public class BookingNotificationTests
 
         await new SendBookingCancellation(Notifications).Handle(new BookingCancelled(booking.Id, "rain"), CancellationToken.None);
 
-        _sender.Sent.Should().ContainSingle().Which.Subject.Should().Be("Booking cancelled");
+        await _sender.Received(1).SendAsync(Arg.Is<Notification>(n => n.Subject == "Booking cancelled"), Arg.Any<CancellationToken>());
     }
 
     [Test]
@@ -48,6 +52,6 @@ public class BookingNotificationTests
     {
         await new SendBookingConfirmation(Notifications).Handle(new BookingCreated(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
 
-        _sender.Sent.Should().BeEmpty();
+        await _sender.DidNotReceiveWithAnyArgs().SendAsync(default!, default);
     }
 }

@@ -3,7 +3,7 @@
 API for a padel club: members, courts and bookings.
 
 **Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Redis (rate limits), Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
-**Tests:** TUnit (engine only) with AwesomeAssertions and AutoBogus builders. The integration tests use Testcontainers (PostgreSQL, Redis and Keycloak) and Refit; the architecture tests use NetArchTest.
+**Tests:** TUnit (engine only) with AwesomeAssertions, AutoBogus builders and NSubstitute. The integration tests use Testcontainers (PostgreSQL, Redis and Keycloak) and Refit; the architecture tests use NetArchTest.
 
 ## Requirements
 
@@ -39,6 +39,8 @@ The realm is defined in [src/Padel.AppHost/Realms/padel-realm.json](src/Padel.Ap
 The users and the password grant on `padel-scalar` are for development only.
 
 ## Architecture
+
+The reasons behind the design are recorded as Architecture Decision Records in [docs/adr](docs/adr/README.md). [CLAUDE.md](CLAUDE.md) summarises the commands and coding rules for coding agents, and `.claude/skills` has step-by-step guides for adding a use case, a migration or an ADR.
 
 | Project | Responsibility |
 | --- | --- |
@@ -244,7 +246,9 @@ var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com").Suspe
 var request = CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(start).Generate();
 ```
 
-Set only the values the test depends on; the rest is random. The unit tests have builders for the entities (`MemberBuilder`, `CourtBuilder`, `BookingBuilder`). These create the entity through its domain factory, then set every property with a rule, because AutoFaker would otherwise fill private setters with random values. The builders produce a given state directly. Tests of the domain rules themselves call the factories (`Booking.Create`, `Member.Register`). The integration tests have builders for the API requests.
+Set only the values the test depends on; the rest is random.
+
+Handler tests use `HandlerFixture`: in-memory repositories that run the same LINQ as EF Core, a `FakeUnitOfWork` that collects domain events, a `FakeTimeProvider` and a `FakeCurrentUser`. NSubstitute is only used for interactions and failure injection, for example to check that a notification was sent or to make a save fail. Repositories are not mocked ([ADR 14](docs/adr/0014-test-strategy.md)). The unit tests have builders for the entities (`MemberBuilder`, `CourtBuilder`, `BookingBuilder`). These create the entity through its domain factory, then set every property with a rule, because AutoFaker would otherwise fill private setters with random values. The builders produce a given state directly. Tests of the domain rules themselves call the factories (`Booking.Create`, `Member.Register`). The integration tests have builders for the API requests.
 
 ## CI and container images
 

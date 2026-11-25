@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using Padel.Application;
 using Padel.Application.Common;
 using Padel.Application.Common.Behaviors;
@@ -39,7 +40,7 @@ public class ApplicationServiceCollectionTests
         services.AddScoped<IBookingRepository, InMemoryBookingRepository>();
         services.AddScoped<IUnitOfWork>(_ => new FakeUnitOfWork());
         services.AddScoped<ICurrentUser>(_ => FakeCurrentUser.Admin());
-        services.AddSingleton<INotificationSender, RecordingNotificationSender>();
+        services.AddSingleton(Substitute.For<INotificationSender>());
         configure?.Invoke(services);
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
