@@ -1,14 +1,14 @@
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 using Padel.Application.Common.Messaging;
 using Padel.Domain.Common;
 
 namespace Padel.Application.Common.Behaviors;
 
 /// <summary>
-/// Wraps every request in an OpenTelemetry span and logs its duration and outcome.
+/// Wraps every request in an OpenTelemetry span, tagged with the user and the outcome.
+/// <see cref="LoggingBehavior{TRequest, TValue}"/> logs the request itself, inside this span.
 /// </summary>
-public sealed class TelemetryBehavior<TRequest, TValue>(ILogger<TelemetryBehavior<TRequest, TValue>> logger)
+public sealed class TelemetryBehavior<TRequest, TValue>(ICurrentUser currentUser)
     : IPipelineBehavior<TRequest, TValue>
     where TRequest : notnull
     where TValue : notnull
@@ -19,28 +19,17 @@ public sealed class TelemetryBehavior<TRequest, TValue>(ILogger<TelemetryBehavio
     {
         using var activity = PadelTelemetry.ActivitySource.StartActivity(RequestName);
         activity?.SetTag("padel.request.type", typeof(TRequest).FullName);
-
-        var started = Stopwatch.GetTimestamp();
+        activity?.SetTag("user.id", currentUser.UserId);
 
         try
         {
             var result = await next();
-            var elapsed = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
 
             if (result is Error error)
             {
                 // An expected outcome (invalid input, business rule, not found), not a fault of the service.
                 activity?.SetTag("padel.error.code", error.Code);
                 activity?.SetTag("padel.error.kind", error.Value?.GetType().Name);
-                logger.LogInformation(
-                    "{RequestName} failed with {ErrorCode} in {ElapsedMilliseconds} ms",
-                    RequestName,
-                    error.Code,
-                    elapsed);
-            }
-            else
-            {
-                logger.LogDebug("Handled {RequestName} in {ElapsedMilliseconds} ms", RequestName, elapsed);
             }
 
             return result;

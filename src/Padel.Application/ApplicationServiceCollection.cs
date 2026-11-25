@@ -21,6 +21,7 @@ public static class ApplicationServiceCollection
 
         // Registration order is pipeline order: the first behavior is the outermost one.
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TelemetryBehavior<,>));
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         services.TryAddScoped<IRequestDispatcher, RequestDispatcher>();

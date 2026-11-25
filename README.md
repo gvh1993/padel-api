@@ -211,6 +211,19 @@ Behind a reverse proxy or ingress, the API takes the client's address and scheme
 
 Headers from any other address are ignored, so clients cannot fake their address.
 
+## Logging
+
+Every command and query is logged by `LoggingBehavior`, in the category `Padel.UseCases`:
+
+- the use case;
+- the caller: the account (`sub`), the linked member, and whether the caller is an admin;
+- the request and the result as JSON, or the error code and description;
+- the duration.
+
+Lists log the number of items, their ids and whether there is a next page. Successes and expected failures are logged at Information, exceptions at Error. Logs written during the use case, for example by EF Core, carry the use case and the user as scope, and every entry has the trace id, so a request can be followed from log to trace in the Aspire dashboard.
+
+The entries contain personal data as is ([ADR 15](docs/adr/0015-log-every-use-case.md)). Treat the log store like the database: limit access and set a retention period.
+
 ## Health checks
 
 These endpoints need no token.
@@ -218,10 +231,18 @@ These endpoints need no token.
 | Endpoint | Checks | Use |
 | --- | --- | --- |
 | `/health/live` | Only that the process responds | Liveness probe: restart when it fails |
-| `/health/ready` | The database | Readiness probe: send no traffic when it fails. Aspire waits for it. |
-| `/health` | Every check, including Keycloak, with details as JSON | Development only |
+| `/health/ready` | The database is reachable and has every migration this version expects | Readiness probe: send no traffic when it fails. Aspire waits for it. |
+| `/health` | Every check, with details as JSON | Development only |
 
-Keycloak is deliberately not part of readiness. The API validates tokens with cached signing keys, so a short Keycloak outage should not take the API out of service.
+| Check | In readiness | Reports |
+| --- | --- | --- |
+| `database` | Yes | Unhealthy when the database cannot be reached. |
+| `database-migrations` | Yes | Unhealthy while migrations are pending, so a new version gets no traffic until the migration service has run. Once up to date, later probes skip the query. |
+| `outbox` | No | Degraded when the oldest waiting domain event is older than `Outbox:StaleAfter` (5 minutes), or when messages failed every attempt. The API still works, but notifications lag behind. |
+| `keycloak` | No | Unhealthy when Keycloak's OpenID configuration cannot be fetched. |
+| `StackExchange.Redis` | No | Unhealthy when Redis cannot be reached (added by Aspire's Redis client). Rate limiting then fails open. |
+
+Keycloak and Redis are deliberately not part of readiness. The API validates tokens with cached signing keys, and rate limiting lets requests through without Redis, so a short outage of either should not take the API out of service. Liveness never checks dependencies: a database outage should not make the orchestrator restart every instance.
 
 ## Tests
 

@@ -19,6 +19,9 @@ public sealed class OutboxOptions
     /// </summary>
     public TimeSpan Retention { get; set; } = TimeSpan.FromDays(7);
 
+    /// <summary>The outbox health check reports Degraded when a message waits longer than this.</summary>
+    public TimeSpan StaleAfter { get; set; } = TimeSpan.FromMinutes(5);
+
     /// <summary>How often the cleaner deletes handled messages older than <see cref="Retention"/>.</summary>
     public TimeSpan CleanupInterval { get; set; } = TimeSpan.FromHours(1);
 }

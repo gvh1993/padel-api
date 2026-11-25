@@ -2,10 +2,18 @@ using Padel.Domain.Common;
 
 namespace Padel.Application.Common.Querying;
 
+/// <summary>A page of results of any item type, for code that handles every page alike (such as logging).</summary>
+public interface IPagedResult
+{
+    IReadOnlyList<object> Items { get; }
+
+    string? NextCursor { get; }
+}
+
 /// <summary>
 /// One page of results, and the cursor of the next page (<c>null</c> on the last page).
 /// </summary>
-public sealed record PagedResult<T>
+public sealed record PagedResult<T> : IPagedResult
 {
     public List<T> Items { get; init; } = [];
     public string? NextCursor { get; init; }
@@ -15,6 +23,8 @@ public sealed record PagedResult<T>
         Items = items.ToList(),
         NextCursor = nextCursor,
     };
+
+    IReadOnlyList<object> IPagedResult.Items => Items.Cast<object>().ToList();
 
     public PagedResult<TOut> Map<TOut>(Func<T, TOut> map) =>
         PagedResult<TOut>.Create(Items.Select(map), NextCursor);

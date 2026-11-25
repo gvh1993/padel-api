@@ -18,3 +18,4 @@ Why the code looks the way it does. [ADR 1](0001-record-architecture-decisions.m
 | 12 | [API versioning in the URL](0012-api-versioning-in-the-url.md) | Accepted |
 | 13 | [Shared rate limits in Redis, failing open](0013-shared-rate-limits-in-redis-fail-open.md) | Accepted |
 | 14 | [Test strategy and tools](0014-test-strategy.md) | Accepted |
+| 15 | [Log every use case: who, what went in, what came out](0015-log-every-use-case.md) | Accepted |

@@ -4,6 +4,8 @@ namespace Padel.UnitTests.Fakes;
 
 public sealed class FakeCurrentUser : ICurrentUser
 {
+    public string? UserId { get; set; } = "test-user";
+
     public Guid? MemberId { get; set; }
 
     public bool IsAdmin { get; set; }

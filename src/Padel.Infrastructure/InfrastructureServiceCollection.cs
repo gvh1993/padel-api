@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Padel.Application.Common;
 using Padel.Application.Common.Notifications;
 using Padel.Application.Features.Bookings;
@@ -36,6 +37,7 @@ public static class InfrastructureServiceCollection
         services.AddOptions<OutboxOptions>().BindConfiguration(OutboxOptions.SectionName);
         services.AddHostedService<OutboxProcessor>();
         services.AddHostedService<OutboxCleaner>();
+        services.AddHealthChecks().AddCheck<OutboxHealthCheck>("outbox", failureStatus: HealthStatus.Degraded);
         services.TryAddSingleton<INotificationSender, LoggingNotificationSender>();
 
         return services;
@@ -52,7 +54,10 @@ public static class InfrastructureServiceCollection
             ?? throw new InvalidOperationException($"Connection string '{ConnectionStringName}' is not configured.")));
 
         // "ready" is the readiness tag of the service defaults: no traffic until the database answers.
-        services.AddHealthChecks().AddDbContextCheck<PadelDbContext>("database", tags: ["ready"]);
+        services.AddHealthChecks()
+            .AddDbContextCheck<PadelDbContext>("database", tags: ["ready"])
+            .AddCheck<DatabaseMigrationsHealthCheck>("database-migrations", tags: ["ready"]);
+        services.AddSingleton<DatabaseMigrationsHealthCheck.Status>();
         services.AddPadelTelemetry();
 
         return services;

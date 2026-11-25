@@ -1,7 +1,5 @@
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Padel.Application;
 using Padel.Application.Common;
@@ -34,7 +32,7 @@ public class ApplicationServiceCollectionTests
     {
         var services = new ServiceCollection();
         services.AddApplication();
-        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddLogging();
         services.AddScoped<IMemberRepository, InMemoryMemberRepository>();
         services.AddScoped<ICourtRepository, InMemoryCourtRepository>();
         services.AddScoped<IBookingRepository, InMemoryBookingRepository>();
@@ -68,7 +66,7 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task AddApplication_ShouldRegisterTelemetryBeforeValidationBehavior()
+    public async Task AddApplication_ShouldRegisterTelemetryThenLoggingThenValidationBehavior()
     {
         await using var provider = BuildProvider();
         await using var scope = provider.CreateAsyncScope();
@@ -76,7 +74,7 @@ public class ApplicationServiceCollectionTests
         var behaviors = scope.ServiceProvider.GetServices<IPipelineBehavior<GetMemberQuery, MemberDto>>()
             .Select(behavior => behavior.GetType().GetGenericTypeDefinition());
 
-        behaviors.Should().Equal(new[] { typeof(TelemetryBehavior<,>), typeof(ValidationBehavior<,>) });
+        behaviors.Should().Equal(new[] { typeof(TelemetryBehavior<,>), typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>) });
     }
 
     [Test]
