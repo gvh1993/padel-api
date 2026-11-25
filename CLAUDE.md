@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Padel club API: members, courts and bookings. .NET 11 / C# 15, minimal APIs, EF Core 11 on PostgreSQL, Keycloak, Redis, Aspire.
+Padel club API: members, courts and bookings. .NET 11 / C# 15, minimal APIs, EF Core 11 on PostgreSQL, Keycloak, Aspire.
 [README.md](README.md) describes the system; [docs/adr](docs/adr/README.md) explains why it is built this way. Read the relevant ADR before changing a design decision.
 
 ## Commands

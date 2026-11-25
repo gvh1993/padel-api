@@ -13,7 +13,7 @@ Significant decisions are recorded as Architecture Decision Records (ADRs) in `d
 
 A decision is significant when it is hard to reverse, affects several layers, or chooses between reasonable alternatives (a library, a pattern, a protocol).
 
-Records are not edited after they are accepted, apart from their status. A changed decision gets a new record that supersedes the old one; the old one's status becomes `Superseded by NNNN`.
+Records are not edited after they are accepted, apart from their status. A changed decision gets a new record that supersedes the old one; the old one's status becomes `Superseded by NNNN`. When a later decision makes a detail in another record wrong (for example a component that was removed), that detail may be corrected, with an `Amended` line under the date that says what changed and why.
 
 ## Consequences
 

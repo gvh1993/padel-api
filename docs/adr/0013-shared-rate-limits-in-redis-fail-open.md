@@ -1,6 +1,6 @@
 # 13. Shared rate limits in Redis, failing open
 
-- **Status:** Accepted
+- **Status:** Superseded by [16](0016-in-memory-rate-limits-per-instance.md)
 - **Date:** 2026-11-25
 
 ## Context

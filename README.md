@@ -2,8 +2,8 @@
 
 API for a padel club: members, courts and bookings.
 
-**Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Redis (rate limits), Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
-**Tests:** TUnit (engine only) with AwesomeAssertions, AutoBogus builders and NSubstitute. The integration tests use Testcontainers (PostgreSQL, Redis and Keycloak) and Refit; the architecture tests use NetArchTest.
+**Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
+**Tests:** TUnit (engine only) with AwesomeAssertions, AutoBogus builders and NSubstitute. The integration tests use Testcontainers (PostgreSQL and Keycloak) and Refit; the architecture tests use NetArchTest.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ API for a padel club: members, courts and bookings.
 dotnet run --project src/Padel.AppHost     # or: aspire run
 ```
 
-The Aspire AppHost starts PostgreSQL, Redis and Keycloak (realm `padel`), runs the migration service and then starts the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
+The Aspire AppHost starts PostgreSQL and Keycloak (realm `padel`), runs the migration service and then starts the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
 
 | What | Where |
 | --- | --- |
@@ -198,7 +198,7 @@ Each caller has request limits per minute: the account (`sub`) when signed in, o
 
 A caller over the limit gets a **429** problem with a `Retry-After` header. Health checks and the documentation are not limited.
 
-The counters are kept in Redis when the connection string `ConnectionStrings:redis` is set (Aspire sets it), so the limits hold across all API instances. Without it, each instance counts on its own, which is fine for a single instance. When Redis cannot be reached, requests are let through without a limit and a warning is logged: an unavailable rate-limit store should not take the API down. Set `RateLimiting:KeyPrefix` (default `padel`) when several apps or environments share one Redis.
+The counters are kept in memory, per instance ([ADR 16](docs/adr/0016-in-memory-rate-limits-per-instance.md)). With several instances, each one counts on its own, so lower the limits accordingly.
 
 ## Behind a reverse proxy
 
@@ -240,9 +240,8 @@ These endpoints need no token.
 | `database-migrations` | Yes | Unhealthy while migrations are pending, so a new version gets no traffic until the migration service has run. Once up to date, later probes skip the query. |
 | `outbox` | No | Degraded when the oldest waiting domain event is older than `Outbox:StaleAfter` (5 minutes), or when messages failed every attempt. The API still works, but notifications lag behind. |
 | `keycloak` | No | Unhealthy when Keycloak's OpenID configuration cannot be fetched. |
-| `StackExchange.Redis` | No | Unhealthy when Redis cannot be reached (added by Aspire's Redis client). Rate limiting then fails open. |
 
-Keycloak and Redis are deliberately not part of readiness. The API validates tokens with cached signing keys, and rate limiting lets requests through without Redis, so a short outage of either should not take the API out of service. Liveness never checks dependencies: a database outage should not make the orchestrator restart every instance.
+Keycloak is deliberately not part of readiness. The API validates tokens with cached signing keys, so a short Keycloak outage should not take the API out of service. Liveness never checks dependencies: a database outage should not make the orchestrator restart every instance.
 
 ## Tests
 
@@ -254,7 +253,7 @@ dotnet test
 | --- | --- |
 | `Padel.UnitTests` | Domain and Application, using in-memory fakes. |
 | `Padel.ArchitectureTests` | Layer dependencies, vertical slices and naming conventions. |
-| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL, Redis and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
+| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
 
 Test names follow `Action_GivenState_ShouldOutcome` (existing data or the caller) or `Action_WhenInput_ShouldOutcome` (what the action receives), for example `CreateBooking_GivenSuspendedMember_ShouldReturn422` and `CreateBooking_WhenSlotInThePast_ShouldReturn422`. Tests without a scenario are named `Action_ShouldOutcome`.
 
@@ -278,7 +277,10 @@ Handler tests use `HandlerFixture`: in-memory repositories that run the same LIN
 1. It builds the solution; code style is part of the build.
 2. It checks that the model has no changes without a migration.
 3. It runs all tests, including the integration tests with Testcontainers. The TRX and coverage files are uploaded as artifacts.
-4. It builds both container images.
+4. It merges the coverage of all test projects into one report (shown in the run's summary) and fails when the production code has less than 85% line or 75% branch coverage. The minimums are in `ci.yml`.
+5. It builds both container images.
+
+To see the coverage locally: run `dotnet test --solution PadelApi.slnx --coverage --coverage-output-format cobertura --results-directory TestResults`, then `dotnet reportgenerator -reports:TestResults/*.cobertura.xml -targetdir:TestResults/coverage -reporttypes:Html`.
 
 The actions are pinned to a commit SHA, with the version in a comment, and the NuGet packages are cached. [Dependabot](.github/dependabot.yml) opens weekly pull requests for NuGet packages (grouped, for example all of Aspire together) and for the actions.
 
@@ -288,6 +290,30 @@ To build the images locally (Docker required):
 dotnet publish src/Padel.Api -c Release -t:PublishContainer                # image padel-api
 dotnet publish src/Padel.MigrationService -c Release -t:PublishContainer   # image padel-migrations
 ```
+
+## Deployment
+
+Aspire is for local development only ([ADR 10](docs/adr/0010-aspire-for-local-development.md)). In production, run the two container images that CI builds (see [CI and container images](#ci-and-container-images)). Both run as a non-root user; the API listens on port 8080, the default of the .NET container images.
+
+1. **Migrate:** run `padel-migrations` once per release, before the API, for example as a Kubernetes Job or a pipeline step. It applies the pending migrations and exits with code 0. It needs only `ConnectionStrings__padel`.
+2. **Roll out the API:** start `padel-api`. Until the migrations have run, `/health/ready` fails (`database-migrations`), so an instance gets no traffic before the schema is ready.
+
+Settings of the API (environment variables):
+
+| Setting | Required | Description |
+| --- | --- | --- |
+| `ConnectionStrings__padel` | Yes | PostgreSQL connection string. |
+| `Keycloak__Authority` | Yes | The realm URL, for example `https://login.example.com/realms/padel`. It must match the token issuer. |
+| `Keycloak__Audience` | No | The expected token audience (default `padel-api`). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | No | Your OpenTelemetry collector. Without it, logs, traces and metrics are not exported. |
+| `ForwardedHeaders__KnownNetworks__0` | Behind a proxy | The network of the reverse proxy or ingress, for example `10.0.0.0/8` (see [Behind a reverse proxy](#behind-a-reverse-proxy)). |
+| `Club__Bookings__*` | No | The booking rules (time zone, opening hours, limits); the defaults are in `appsettings.json`. |
+| `RateLimiting__PermitsPerMinute`, `RateLimiting__BookingPermitsPerMinute` | No | Limits per caller, per instance. |
+| `OpenApi__Enabled` | No | `true` serves `/openapi/v1.json` and Scalar. Off by default in production. |
+
+Probes: liveness on `/health/live`, readiness on `/health/ready`. Terminate TLS at the reverse proxy or ingress.
+
+In the realm for production, remove the development users and the password grant of `padel-scalar`, and give the users real passwords or connect an external identity provider.
 
 ## Migrations
 

@@ -16,6 +16,7 @@ Why the code looks the way it does. [ADR 1](0001-record-architecture-decisions.m
 | 10 | [Aspire for local development and a separate migration service](0010-aspire-for-local-development.md) | Accepted |
 | 11 | [Cursor (keyset) paging for lists](0011-cursor-paging-for-lists.md) | Accepted |
 | 12 | [API versioning in the URL](0012-api-versioning-in-the-url.md) | Accepted |
-| 13 | [Shared rate limits in Redis, failing open](0013-shared-rate-limits-in-redis-fail-open.md) | Accepted |
+| 13 | [Shared rate limits in Redis, failing open](0013-shared-rate-limits-in-redis-fail-open.md) | Superseded by 16 |
 | 14 | [Test strategy and tools](0014-test-strategy.md) | Accepted |
 | 15 | [Log every use case: who, what went in, what came out](0015-log-every-use-case.md) | Accepted |
+| 16 | [In-memory rate limits per instance](0016-in-memory-rate-limits-per-instance.md) | Accepted |
