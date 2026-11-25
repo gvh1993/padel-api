@@ -36,6 +36,9 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
 
     public KeycloakTokens Tokens { get; private set; } = null!;
 
+    /// <summary>The test database, for tests that look at the schema itself.</summary>
+    public string DatabaseConnectionString => _database.GetConnectionString();
+
     /// <summary>Notifications the API sent (through the outbox).</summary>
     public RecordingNotificationSender Notifications { get; } = new();
 

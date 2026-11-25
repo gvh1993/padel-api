@@ -17,6 +17,9 @@ public sealed class PadelDbContext(DbContextOptions<PadelDbContext> options) : D
     {
         // Needed for the booking exclusion constraint (equality on CourtId inside a GiST index).
         modelBuilder.HasPostgresExtension("btree_gist");
+
+        // Trigram indexes make the case-insensitive "contains" searches (LIKE '%...%') use an index.
+        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PadelDbContext).Assembly);
     }
 }

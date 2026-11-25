@@ -17,7 +17,7 @@ partial class PadelDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125204226_Outbox";
+    public override string LastMigrationId => "20261125204507_SearchIndexes";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -27,6 +27,7 @@ partial class PadelDbContextModelSnapshot : ModelSnapshot
             .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
         NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "btree_gist");
+        NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
         NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
         modelBuilder.Entity("Padel.Domain.Bookings.Booking", b =>
