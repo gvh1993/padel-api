@@ -3,6 +3,9 @@
   <PropertyGroup>
     <UserSecretsId>7d1f2b8e-4c3a-4f5e-9b6d-2a8c1e0f3b47</UserSecretsId>
     <ContainerRepository>padel-api</ContainerRepository>
+    <!-- AV0029/AV0030 suggest Asp.Versioning.OpenApi, but it needs Microsoft.OpenApi 2.x and ASP.NET Core 11 uses 3.x.
+         The API explorer groups the endpoints per version instead: one OpenAPI document per version (Http/ApiVersioning.cs). -->
+    <NoWarn>$(NoWarn);AV0029;AV0030</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />

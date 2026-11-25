@@ -32,8 +32,12 @@ builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
 builder.Services.AddPadelAuthentication();
 builder.Services.AddPadelRateLimiting();
+builder.Services.AddPadelApiVersioning();
 
-builder.Services.AddOpenApi(options => options.AddDocumentTransformer<PadelDocumentTransformer>());
+foreach (var version in ApiVersioning.Versions)
+{
+    builder.Services.AddOpenApi(ApiVersioning.DocumentName(version), options => options.AddDocumentTransformer<PadelDocumentTransformer>());
+}
 
 var app = builder.Build();
 
@@ -62,7 +66,7 @@ if (app.Configuration.GetValue<bool>("OpenApi:Enabled"))
         .AllowAnonymous();
 }
 
-app.MapEndpoints();
+app.MapVersionedApi().MapEndpoints();
 
 
 await app.RunAsync();

@@ -28,7 +28,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
         member.Email.Should().Be(email.ToLowerInvariant());
         member.Phone.Should().Be("310101234567");
         member.Status.Should().Be(MemberStatus.Active);
-        response.Headers!.Location!.AbsolutePath.Should().Be($"/api/members/{member.Id}");
+        response.Headers!.Location!.AbsolutePath.Should().Be($"/api/v1/members/{member.Id}");
     }
 
     [Test]
@@ -140,25 +140,65 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task ListMembers_WhenSearchSortAndPaging_ShouldReturnFilteredSortedPage()
+    public async Task ListMembers_WhenSearchSortAndCursor_ShouldReturnFilteredSortedPages()
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Anna", $"Visser{tag}"));
         await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Bram", $"Bakker{tag}"));
         await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Cees", $"Jansen{tag}"));
+        var parameters = new MemberListParameters { Search = tag, Sort = "-firstName", PageSize = 2 };
 
-        var response = await Admin.Members.List(new MemberListParameters
+        var first = (await Admin.Members.List(parameters)).Value();
+        var second = (await Admin.Members.List(parameters with { Cursor = first.NextCursor })).Value();
+
+        first.Items.Select(m => m.FirstName).Should().Equal(new[] { "Cees", "Bram" });
+        first.NextCursor.Should().NotBeNull();
+        second.Items.Select(m => m.FirstName).Should().Equal(new[] { "Anna" });
+        second.NextCursor.Should().BeNull();
+    }
+
+    [Test]
+    public async Task ListMembers_WhenPagingThroughTiesAndAnEnumSort_ShouldReturnEveryMemberOnceInOrder()
+    {
+        // Same last name and status for several members: the id breaks the ties, also in PostgreSQL.
+        var tag = Guid.NewGuid().ToString("N")[..10];
+        var members = new List<RegisterMemberResponse>();
+        for (var i = 0; i < 5; i++)
         {
-            Search = tag,
-            Sort = "-firstName",
-            Page = 1,
-            PageSize = 2,
-        });
+            members.Add(await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName($"Member{i}", $"Same{tag}")));
+        }
 
-        var page = response.Value();
-        page.TotalCount.Should().Be(3);
-        page.TotalPages.Should().Be(2);
-        page.Items.Select(m => m.FirstName).Should().Equal(new[] { "Cees", "Bram" });
+        await Admin.Members.Suspend(members[1].Id, new SuspendMemberRequest());
+        await Admin.Members.Suspend(members[3].Id, new SuspendMemberRequest());
+
+        var seen = new List<ListMembersItem>();
+        var parameters = new MemberListParameters { Search = tag, Sort = "-status,lastName", PageSize = 2 };
+        string? cursor = null;
+        do
+        {
+            var page = (await Admin.Members.List(parameters with { Cursor = cursor })).Value();
+            seen.AddRange(page.Items);
+            cursor = page.NextCursor;
+        }
+        while (cursor is not null);
+
+        seen.Select(m => m.Id).Should().OnlyHaveUniqueItems().And.BeEquivalentTo(members.Select(m => m.Id));
+        seen.Select(m => m.Status).Should().Equal(
+            MemberStatus.Suspended, MemberStatus.Suspended, MemberStatus.Active, MemberStatus.Active, MemberStatus.Active);
+    }
+
+    [Test]
+    public async Task ListMembers_WhenCursorOfAnotherSort_ShouldReturn400()
+    {
+        var tag = Guid.NewGuid().ToString("N")[..10];
+        await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Anna", tag));
+        await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Bram", tag));
+        var first = (await Admin.Members.List(new MemberListParameters { Search = tag, Sort = "firstName", PageSize = 1 })).Value();
+
+        var response = await Admin.Members.List(new MemberListParameters { Search = tag, Sort = "email", Cursor = first.NextCursor });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.ReadProblemAsync()).Errors.Keys.Should().BeEquivalentTo(new[] { "cursor" });
     }
 
     [Test]

@@ -1,6 +1,6 @@
 namespace Padel.Api.Features.Bookings;
 
-/// <summary>Body of <c>POST /api/bookings</c>.</summary>
+/// <summary>Body of <c>POST /api/v1/bookings</c>.</summary>
 public sealed record CreateBookingRequest
 {
     public required Guid MemberId { get; init; }

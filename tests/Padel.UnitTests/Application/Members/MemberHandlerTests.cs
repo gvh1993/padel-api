@@ -192,18 +192,47 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task ListMembers_WhenSecondPage_ShouldReturnRemainingItemsAndTotals()
+    public async Task ListMembers_WhenNextCursor_ShouldReturnTheNextPage()
     {
         for (var i = 0; i < 5; i++)
         {
             _fixture.Add(MemberBuilder.New().WithEmail($"m{i}@example.com").WithName($"Member{i}", "Test"));
         }
 
-        var result = await ListHandler.Handle(new ListMembersQuery { Page = 2, PageSize = 3, Sort = "firstName" }, CancellationToken.None).ShouldSucceed();
+        var first = await ListHandler.Handle(new ListMembersQuery { PageSize = 3, Sort = "firstName" }, CancellationToken.None).ShouldSucceed();
+        var second = await ListHandler.Handle(
+            new ListMembersQuery { PageSize = 3, Sort = "firstName", Cursor = first.NextCursor },
+            CancellationToken.None).ShouldSucceed();
 
-        result.Items.Select(m => m.FirstName).Should().Equal(new[] { "Member3", "Member4" });
-        result.TotalCount.Should().Be(5);
-        result.TotalPages.Should().Be(2);
-        result.Page.Should().Be(2);
+        first.Items.Select(m => m.FirstName).Should().Equal(new[] { "Member0", "Member1", "Member2" });
+        first.NextCursor.Should().NotBeNull();
+        second.Items.Select(m => m.FirstName).Should().Equal(new[] { "Member3", "Member4" });
+        second.NextCursor.Should().BeNull();
+    }
+
+    [Test]
+    public async Task ListMembers_WhenPagingThroughTiesAndAnEnumSort_ShouldReturnEveryMemberOnceInOrder()
+    {
+        var suspended = Enumerable.Range(0, 3)
+            .Select(i => _fixture.Add(MemberBuilder.New().WithEmail($"s{i}@example.com").WithName("Same", "Name").Suspended()).Id)
+            .ToList();
+        var active = Enumerable.Range(0, 4)
+            .Select(i => _fixture.Add(MemberBuilder.New().WithEmail($"a{i}@example.com").WithName("Same", "Name")).Id)
+            .ToList();
+
+        var seen = new List<Guid>();
+        string? cursor = null;
+        do
+        {
+            var page = await ListHandler.Handle(
+                new ListMembersQuery { PageSize = 2, Sort = "-status,lastName", Cursor = cursor },
+                CancellationToken.None).ShouldSucceed();
+            seen.AddRange(page.Items.Select(m => m.Id));
+            cursor = page.NextCursor;
+        }
+        while (cursor is not null);
+
+        // Suspended comes after Active in the enum, so first when descending; ties in order of id.
+        seen.Should().Equal(suspended.Order().Concat(active.Order()));
     }
 }

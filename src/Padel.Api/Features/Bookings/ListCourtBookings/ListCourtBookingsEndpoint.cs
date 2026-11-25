@@ -9,7 +9,7 @@ namespace Padel.Api.Features.Bookings;
 
 internal sealed class ListCourtBookingsEndpoint : IEndpoint
 {
-    // The schedule of a court lives under the court's route: /api/courts/{id}/bookings.
+    // The schedule of a court lives under the court's route: /api/v1/courts/{id}/bookings.
     public void MapEndpoint(IEndpointRouteBuilder routes) =>
         routes.MapCourtsGroup()
             .MapGet("/{id:guid}/bookings", HandleAsync)
@@ -28,7 +28,7 @@ internal sealed class ListCourtBookingsEndpoint : IEndpoint
         var query = new ListCourtBookingsQuery
         {
             CourtId = id,
-            Page = request.Page,
+            Cursor = request.Cursor,
             PageSize = request.PageSize,
             Sort = request.Sort,
             Status = request.Status,

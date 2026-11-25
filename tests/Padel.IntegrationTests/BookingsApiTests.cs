@@ -75,7 +75,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         statusCodes.Count(s => s == HttpStatusCode.Conflict).Should().Be(7);
 
         var schedule = (await Admin.Courts.ListBookings(court.Id)).Value();
-        schedule.TotalCount.Should().Be(1);
+        schedule.Items.Should().ContainSingle();
     }
 
     [Test]
@@ -256,6 +256,32 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         })).Value();
 
         page.Items.Select(b => b.Id).Should().Equal(new[] { evening.Id, morning.Id });
+    }
+
+    [Test]
+    public async Task ListCourtBookings_WhenFollowingNextCursor_ShouldReturnEachBookingOnceNewestFirst()
+    {
+        var member = await RegisterMemberAsync();
+        var court = await CreateCourtAsync();
+        var day = FutureSlot(daysAhead: 12, hour: 0);
+        var bookings = new[]
+        {
+            await BookAsync(member, court, day.AddHours(9)),
+            await BookAsync(member, court, day.AddHours(11)),
+            await BookAsync(member, court, day.AddHours(13)),
+        };
+
+        var seen = new List<Guid>();
+        string? cursor = null;
+        do
+        {
+            var page = (await As(member).Courts.ListBookings(court.Id, new BookingListParameters { Sort = "-start", PageSize = 1, Cursor = cursor })).Value();
+            seen.AddRange(page.Items.Select(b => b.Id));
+            cursor = page.NextCursor;
+        }
+        while (cursor is not null);
+
+        seen.Should().Equal(bookings.Reverse().Select(b => b.Id));
     }
 
     [Test]

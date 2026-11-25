@@ -6,9 +6,9 @@ using Padel.Domain.Courts;
 
 namespace Padel.Api.Features.Courts;
 
-/// <summary>Query string of <c>GET /api/courts</c>.</summary>
+/// <summary>Query string of <c>GET /api/v1/courts</c>.</summary>
 public sealed record ListCourtsRequest(
-    [Description(QueryDescriptions.Page)][FromQuery(Name = "page")] int Page = 1,
+    [Description(QueryDescriptions.Cursor)][FromQuery(Name = "cursor")] string? Cursor = null,
     [Description(QueryDescriptions.PageSize)][FromQuery(Name = "pageSize")] int PageSize = ListQuery.DefaultPageSize,
     [Description(QueryDescriptions.Sort)][FromQuery(Name = "sort")] string? Sort = null,
     [Description("Only courts with this status.")][FromQuery(Name = "status")] CourtStatus? Status = null,

@@ -16,10 +16,9 @@ public abstract class InMemoryRepository<T> : IRepository<T> where T : Entity
 
     public Task<PagedResult<T>> ListAsync(ListOptions<T> options, CancellationToken cancellationToken = default)
     {
-        var filtered = Store.AsQueryable().ApplyFilters(options);
-        var items = filtered.ApplySorting(options).ApplyPaging(options).ToList();
+        var window = Store.AsQueryable().ApplyFilters(options).ApplySorting(options).ApplyPaging(options).ToList();
 
-        return Task.FromResult(PagedResult<T>.Create(items, options.Page, options.PageSize, filtered.Count()));
+        return Task.FromResult(PagedResult.FromWindow(window, options));
     }
 
     public void Add(T entity) => Store.Add(entity);

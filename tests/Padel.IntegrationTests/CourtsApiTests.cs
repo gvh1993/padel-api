@@ -22,7 +22,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
         var court = response.Value();
         court.Name.Should().Be(name);
         court.Status.Should().Be(CourtStatus.Available);
-        response.Headers!.Location!.AbsolutePath.Should().Be($"/api/courts/{court.Id}");
+        response.Headers!.Location!.AbsolutePath.Should().Be($"/api/v1/courts/{court.Id}");
     }
 
     [Test]

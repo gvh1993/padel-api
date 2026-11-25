@@ -43,9 +43,9 @@ The users and the password grant on `padel-scalar` are for development only.
 | Project | Responsibility |
 | --- | --- |
 | `Padel.Domain` | Aggregates (`Member`, `Court`, `Booking`), value objects (`Email`, `FullName`, `TimeSlot`) and domain events. No dependencies. |
-| `Padel.Application` | Use cases as vertical slices, plus the in-house dispatcher with pipeline behaviors (telemetry, validation) and paging, filtering and sorting. |
+| `Padel.Application` | Use cases as vertical slices, plus the in-house dispatcher with pipeline behaviors (telemetry, validation) and cursor paging, filtering and sorting. |
 | `Padel.Infrastructure` | EF Core and PostgreSQL, repositories and the unit of work. It owns the database's telemetry (Npgsql, the application's spans) and the database readiness check. |
-| `Padel.Api` | Minimal API endpoints per feature, Keycloak JWT authentication, RFC 9457 problem details, and OpenAPI with Scalar. |
+| `Padel.Api` | Minimal API endpoints per feature, Keycloak JWT authentication, RFC 9457 problem details, API versioning (Asp.Versioning), and OpenAPI with Scalar. |
 | `Padel.ServiceDefaults` | Cross-cutting service defaults: OpenTelemetry export, health endpoints, service discovery and HTTP resilience. |
 | `Padel.MigrationService` | Applies the EF Core migrations, then exits. The API never migrates on start-up. |
 | `Padel.AppHost` | The Aspire app model for local development. |
@@ -60,7 +60,7 @@ src/Padel.Application/Features/Members/
         RegisterMemberCommandValidator.cs
     UpdateMemberProfile/ ...
 src/Padel.Api/Features/Members/
-    MembersGroup.cs                         the /api/members route group
+    MembersGroup.cs                         the /api/v1/members route group
     RegisterMember/
         RegisterMemberRequest.cs            the body (or query string, for lists)
         RegisterMemberEndpoint.cs           maps the route; request → command → response
@@ -132,7 +132,7 @@ The club's rules are in `Club:Bookings` (`BookingPolicy`):
 | Upcoming bookings per member | 3 |
 | Members can cancel up to … before the start (admins until the start) | 2 hours |
 
-A booking also lasts 30 minutes to 3 hours, is in the future, and needs an active member and an available court. A member cannot be on two courts at the same time. Send an `Idempotency-Key` header with `POST /api/bookings` to retry safely: a retry with the same key returns the same booking.
+A booking also lasts 30 minutes to 3 hours, is in the future, and needs an active member and an available court. A member cannot be on two courts at the same time. Send an `Idempotency-Key` header with `POST /api/v1/bookings` to retry safely: a retry with the same key returns the same booking.
 
 Changes accept `If-Match` with the `ETag` from a previous response. When the resource changed in the meantime, the API returns 412 and does not apply the change.
 
@@ -149,13 +149,22 @@ Violations of these constraints return **409 Conflict**.
 
 - **JSON:** requests and responses are JSON. Enums are written as strings.
 - **Errors:** RFC 9457 problem details (`application/problem+json`). Each problem includes a `traceId`. Application errors also include an `errorCode`, such as `Member.EmailInUse`, that clients can rely on.
-- **Lists:** every list endpoint supports `page`, `pageSize` (1–100) and `sort`, for example `sort=lastName,-registeredOn`. A `-` before a field sorts it descending. Each list also has its own filters:
-  - `GET /api/members`: `status`, `search`
-  - `GET /api/courts`: `status`, `surface`, `search`
-  - `GET /api/bookings`: `memberId`, `courtId`, `status`, `from`, `to`
-  - `GET /api/courts/{id}/bookings`: `status`, `from`, `to`
+- **Versions:** the version is part of the path: `/api/v1/members`. Every response has an `api-supported-versions` header. An unknown version, such as `/api/v2/members`, returns 404. Each version has its own OpenAPI document (`/openapi/v1.json`). To add a version, add it to `ApiVersioning.Versions` in `Padel.Api/Http/ApiVersioning.cs`; endpoints that differ between versions use `MapToApiVersion`.
+- **Lists:** every list endpoint uses cursor paging with `cursor`, `pageSize` (1–100) and `sort`, for example `sort=lastName,-registeredOn`. A `-` before a field sorts it descending. Each list also has its own filters:
+  - `GET /api/v1/members`: `status`, `search`
+  - `GET /api/v1/courts`: `status`, `surface`, `search`
+  - `GET /api/v1/bookings`: `memberId`, `courtId`, `status`, `from`, `to`
+  - `GET /api/v1/courts/{id}/bookings`: `status`, `from`, `to`
 
-  The response contains `items`, `page`, `pageSize`, `totalCount` and `totalPages`. Unknown sort fields return a 400 that lists the allowed fields.
+  The response contains `items` and `nextCursor`. To get the next page, send `nextCursor` back as `cursor` with the same `sort` and filters. On the last page, `nextCursor` is `null`.
+
+  How it works:
+  - The cursor is opaque: base64url JSON with the sort keys and id of the last item. The next page starts after that item (keyset paging), so the database does not count or skip rows, and items that are added or removed between requests do not cause skipped or repeated items.
+  - The id breaks ties between equal sort keys. Enums sort by their order in the enum.
+  - A cursor only works with the sort it was made for. A cursor for another sort, or one that is not valid, returns a 400.
+  - Paging only goes forward, and there is no total count.
+
+  Unknown sort fields return a 400 that lists the allowed fields.
 - **Status codes:**
 
   | Code | Meaning |
@@ -181,7 +190,7 @@ Each caller has request limits per minute: the account (`sub`) when signed in, o
 | Limit | Default | Setting |
 | --- | --- | --- |
 | All of `/api` | 120 requests | `RateLimiting:PermitsPerMinute` |
-| `POST /api/bookings` | 10 new bookings | `RateLimiting:BookingPermitsPerMinute` |
+| `POST /api/v1/bookings` | 10 new bookings | `RateLimiting:BookingPermitsPerMinute` |
 
 A caller over the limit gets a **429** problem with a `Retry-After` header. Health checks and the documentation are not limited.
 

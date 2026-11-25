@@ -15,9 +15,9 @@ public class RateLimitingTests(PadelApiFactory factory)
         var client = limited.CreateClient();
         client.DefaultRequestHeaders.Authorization = new("Bearer", await factory.Tokens.WithoutMemberLinkAsync());
 
-        (await client.GetAsync("api/courts")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await client.GetAsync("api/courts")).StatusCode.Should().Be(HttpStatusCode.OK);
-        var rejected = await client.GetAsync("api/courts");
+        (await client.GetAsync("api/v1/courts")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await client.GetAsync("api/v1/courts")).StatusCode.Should().Be(HttpStatusCode.OK);
+        var rejected = await client.GetAsync("api/v1/courts");
 
         rejected.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         rejected.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");

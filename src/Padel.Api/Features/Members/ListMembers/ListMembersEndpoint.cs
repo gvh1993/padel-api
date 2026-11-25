@@ -14,7 +14,7 @@ internal sealed class ListMembersEndpoint : IEndpoint
             .MapGet("/", HandleAsync)
             .RequireAuthorization(PadelAuthorization.AdminPolicy)
             .WithName("ListMembers")
-            .WithSummary("Lists members with paging, sorting and filtering.")
+            .WithSummary("Lists members with cursor paging, sorting and filtering.")
             .WithDescription("Admin only. Sort fields: firstName, lastName, email, status, registeredOn.")
             .ProducesValidationProblems();
 
@@ -25,7 +25,7 @@ internal sealed class ListMembersEndpoint : IEndpoint
     {
         var query = new ListMembersQuery
         {
-            Page = request.Page,
+            Cursor = request.Cursor,
             PageSize = request.PageSize,
             Sort = request.Sort,
             Status = request.Status,

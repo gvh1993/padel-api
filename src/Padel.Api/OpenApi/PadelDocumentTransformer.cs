@@ -18,7 +18,7 @@ internal sealed class PadelDocumentTransformer(IOptions<KeycloakOptions> keycloa
         document.Info.Description =
             "Members, courts and bookings for a padel club. " +
             "Errors are RFC 9457 problem details. " +
-            "List endpoints support `page`, `pageSize` and `sort` (e.g. `lastName,-registeredOn`) plus resource-specific filters.";
+            "List endpoints support `cursor`, `pageSize` and `sort` (e.g. `lastName,-registeredOn`) plus resource-specific filters.";
 
         var openIdConnect = keycloakOptions.Value.Authority.TrimEnd('/') + "/protocol/openid-connect";
 

@@ -12,7 +12,7 @@ internal sealed class ListBookingsEndpoint : IEndpoint
         routes.MapBookingsGroup()
             .MapGet("/", HandleAsync)
             .WithName("ListBookings")
-            .WithSummary("Lists bookings with paging, sorting and filtering.")
+            .WithSummary("Lists bookings with cursor paging, sorting and filtering.")
             .WithDescription("Admins see all bookings; members only their own. Sort fields: start, end, status, createdOn.")
             .ProducesValidationProblems();
 
@@ -23,7 +23,7 @@ internal sealed class ListBookingsEndpoint : IEndpoint
     {
         var query = new ListBookingsQuery
         {
-            Page = request.Page,
+            Cursor = request.Cursor,
             PageSize = request.PageSize,
             Sort = request.Sort,
             MemberId = request.MemberId,
