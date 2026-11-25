@@ -23,7 +23,7 @@ public class ApiDocumentationTests(PadelApiFactory factory) : IntegrationTestBas
         var authorizationUrl = keycloak.GetProperty("flows").GetProperty("authorizationCode").GetProperty("authorizationUrl").GetString();
         authorizationUrl.Should().Be($"{Tokens.Authority}/protocol/openid-connect/auth");
 
-        var getCourt = root.GetProperty("paths").GetProperty("/api/courts/{id}").GetProperty("get");
+        var getCourt = root.GetProperty("paths").GetProperty("/api/v1/courts/{id}").GetProperty("get");
         var content = getCourt.GetProperty("responses").GetProperty("200").GetProperty("content");
         content.TryGetProperty("application/json", out _).Should().BeTrue();
 
@@ -38,12 +38,23 @@ public class ApiDocumentationTests(PadelApiFactory factory) : IntegrationTestBas
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         var parameters = document.RootElement
-            .GetProperty("paths").GetProperty("/api/members").GetProperty("get").GetProperty("parameters")
+            .GetProperty("paths").GetProperty("/api/v1/members").GetProperty("get").GetProperty("parameters")
             .EnumerateArray()
             .Select(parameter => parameter.GetProperty("name").GetString()!)
             .ToList();
 
-        parameters.Should().BeEquivalentTo(new[] { "page", "pageSize", "sort", "status", "search" });
+        parameters.Should().BeEquivalentTo(new[] { "cursor", "pageSize", "sort", "status", "search" });
+    }
+
+    [Test]
+    public async Task OpenApiDocument_ShouldOnlyHaveVersion1PathsWithTheVersionFilledIn()
+    {
+        using var response = await Anonymous.Raw.Get("openapi/v1.json");
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        var paths = document.RootElement.GetProperty("paths").EnumerateObject().Select(path => path.Name).ToList();
+
+        paths.Should().NotBeEmpty().And.OnlyContain(path => path.StartsWith("/api/v1/"));
     }
 
     [Test]

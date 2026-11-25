@@ -6,28 +6,28 @@ namespace Padel.IntegrationTests.Clients;
 
 public interface IBookingsApi
 {
-    [Post("/api/bookings")]
+    [Post("/api/v1/bookings")]
     Task<IApiResponse<CreateBookingResponse>> Create([Body] CreateBookingRequest request, [Header("Idempotency-Key")] string? idempotencyKey = null);
 
-    [Get("/api/bookings")]
+    [Get("/api/v1/bookings")]
     Task<IApiResponse<ListBookingsResponse>> List([Query] BookingListParameters? parameters = null);
 
-    [Get("/api/bookings/{id}")]
+    [Get("/api/v1/bookings/{id}")]
     Task<IApiResponse<GetBookingResponse>> Get(Guid id);
 
-    [Post("/api/bookings/{id}/cancel")]
+    [Post("/api/v1/bookings/{id}/cancel")]
     Task<IApiResponse<CancelBookingResponse>> Cancel(Guid id, [Body] CancelBookingRequest request);
 
-    [Post("/api/bookings/{id}/complete")]
+    [Post("/api/v1/bookings/{id}/complete")]
     Task<IApiResponse<CompleteBookingResponse>> Complete(Guid id);
 
-    [Post("/api/bookings/{id}/no-show")]
+    [Post("/api/v1/bookings/{id}/no-show")]
     Task<IApiResponse<MarkBookingNoShowResponse>> MarkNoShow(Guid id);
 }
 
 public sealed record BookingListParameters
 {
-    public int? Page { get; init; }
+    public string? Cursor { get; init; }
     public int? PageSize { get; init; }
     public string? Sort { get; init; }
     public Guid? MemberId { get; init; }

@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using NSubstitute;
 using Padel.Application.Common;
 using Padel.Application.Features.Courts;
 using Padel.Domain.Common;
@@ -28,8 +29,9 @@ public class CourtHandlerTests
     public async Task RenameCourt_GivenSaveFails_ShouldReturnTheSaveError()
     {
         var court = _fixture.Add(CourtBuilder.New());
-        _fixture.UnitOfWork.FailWith = ApplicationErrors.ConcurrentChange;
-        var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(ApplicationErrors.ConcurrentChange);
+        var handler = new RenameCourtCommandHandler(_fixture.Courts, unitOfWork);
 
         var error = await handler.Handle(new RenameCourtCommand(court.Id, "Centre"), CancellationToken.None).ShouldFail();
 

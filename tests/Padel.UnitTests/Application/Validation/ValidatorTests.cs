@@ -1,7 +1,9 @@
 using AwesomeAssertions;
+using Padel.Application.Common.Querying;
 using Padel.Application.Features.Bookings;
 using Padel.Application.Features.Courts;
 using Padel.Application.Features.Members;
+using Padel.UnitTests.Builders;
 
 namespace Padel.UnitTests.Application.Validation;
 
@@ -80,14 +82,34 @@ public class ValidatorTests
     }
 
     [Test]
-    [Arguments(0, 20)]
-    [Arguments(1, 0)]
-    [Arguments(1, 101)]
-    public async Task ListQueryValidator_WhenInvalidPaging_ShouldFail(int page, int pageSize)
+    [Arguments(0)]
+    [Arguments(101)]
+    public async Task ListQueryValidator_WhenInvalidPageSize_ShouldFail(int pageSize)
     {
-        var result = await new ListCourtsQueryValidator().ValidateAsync(new ListCourtsQuery { Page = page, PageSize = pageSize });
+        var result = await new ListCourtsQueryValidator().ValidateAsync(new ListCourtsQuery { PageSize = pageSize });
 
-        result.IsValid.Should().BeFalse();
+        result.Errors.Select(e => e.PropertyName).Should().Equal("PageSize");
+    }
+
+    [Test]
+    public async Task ListQueryValidator_WhenCursorIsNotACursor_ShouldReportCursor()
+    {
+        var result = await new ListCourtsQueryValidator().ValidateAsync(new ListCourtsQuery { Cursor = "not-a-cursor" });
+
+        result.Errors.Select(e => e.PropertyName).Should().Equal("Cursor");
+    }
+
+    [Test]
+    public async Task ListQueryValidator_WhenCursorWasMadeForAnotherSort_ShouldReportCursor()
+    {
+        var court = CourtBuilder.New().Generate();
+        var cursor = PageCursor.Encode(court, CourtSorting.Map.Resolve("name"));
+
+        var sameSort = await new ListCourtsQueryValidator().ValidateAsync(new ListCourtsQuery { Cursor = cursor, Sort = "NAME" });
+        var otherSort = await new ListCourtsQueryValidator().ValidateAsync(new ListCourtsQuery { Cursor = cursor, Sort = "-name" });
+
+        sameSort.IsValid.Should().BeTrue();
+        otherSort.Errors.Select(e => e.PropertyName).Should().Equal("Cursor");
     }
 
     [Test]

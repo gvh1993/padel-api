@@ -1,6 +1,6 @@
 namespace Padel.Api.Features.Courts;
 
-/// <summary>Body of <c>POST /api/courts</c>.</summary>
+/// <summary>Body of <c>POST /api/v1/courts</c>.</summary>
 public sealed record CreateCourtRequest
 {
     public required string Name { get; init; }

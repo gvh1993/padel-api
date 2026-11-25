@@ -6,9 +6,9 @@ using Padel.Domain.Bookings;
 
 namespace Padel.Api.Features.Bookings;
 
-/// <summary>Query string of <c>GET /api/bookings</c>.</summary>
+/// <summary>Query string of <c>GET /api/v1/bookings</c>.</summary>
 public sealed record ListBookingsRequest(
-    [Description(QueryDescriptions.Page)][FromQuery(Name = "page")] int Page = 1,
+    [Description(QueryDescriptions.Cursor)][FromQuery(Name = "cursor")] string? Cursor = null,
     [Description(QueryDescriptions.PageSize)][FromQuery(Name = "pageSize")] int PageSize = ListQuery.DefaultPageSize,
     [Description(QueryDescriptions.Sort)][FromQuery(Name = "sort")] string? Sort = null,
     [Description("Only bookings of this member. Ignored for members, who only see their own bookings.")][FromQuery(Name = "memberId")] Guid? MemberId = null,

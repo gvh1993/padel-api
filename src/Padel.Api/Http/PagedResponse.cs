@@ -7,15 +7,11 @@ public abstract record PagedResponse<TItem>
 {
     public IReadOnlyList<TItem> Items { get; init; } = [];
 
-    /// <summary>1-based page number.</summary>
-    public int Page { get; init; }
-
-    public int PageSize { get; init; }
-
-    /// <summary>Number of items over all pages.</summary>
-    public int TotalCount { get; init; }
-
-    public int TotalPages { get; init; }
+    /// <summary>
+    /// Pass it as <c>cursor</c> (with the same <c>sort</c> and filters) to get the next page;
+    /// <c>null</c> on the last page.
+    /// </summary>
+    public string? NextCursor { get; init; }
 }
 
 internal static class PagedResponse
@@ -25,9 +21,6 @@ internal static class PagedResponse
         where TResponse : PagedResponse<TItem>, new() => new()
         {
             Items = page.Items.Select(map).ToList(),
-            Page = page.Page,
-            PageSize = page.PageSize,
-            TotalCount = page.TotalCount,
-            TotalPages = page.TotalPages,
+            NextCursor = page.NextCursor,
         };
 }

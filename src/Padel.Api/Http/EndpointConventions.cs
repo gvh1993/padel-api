@@ -34,7 +34,7 @@ internal static class EndpointConventions
 /// <summary>Descriptions of the paging and sorting parameters that every list request has.</summary>
 internal static class QueryDescriptions
 {
-    public const string Page = "1-based page number.";
+    public const string Cursor = "The `nextCursor` of the previous page; omit it for the first page. Use it with the same `sort`.";
     public const string PageSize = "Items per page (1-100).";
     public const string Sort = "Comma separated sort fields; prefix a field with '-' to sort descending, e.g. `lastName,-registeredOn`.";
 }

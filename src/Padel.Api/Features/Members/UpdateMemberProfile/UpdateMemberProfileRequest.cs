@@ -1,6 +1,6 @@
 namespace Padel.Api.Features.Members;
 
-/// <summary>Body of <c>PUT /api/members/{id}</c>.</summary>
+/// <summary>Body of <c>PUT /api/v1/members/{id}</c>.</summary>
 public sealed record UpdateMemberProfileRequest
 {
     public required string FirstName { get; init; }

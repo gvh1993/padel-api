@@ -12,7 +12,7 @@ internal sealed class ListCourtsEndpoint : IEndpoint
         routes.MapCourtsGroup()
             .MapGet("/", HandleAsync)
             .WithName("ListCourts")
-            .WithSummary("Lists courts with paging, sorting and filtering.")
+            .WithSummary("Lists courts with cursor paging, sorting and filtering.")
             .WithDescription("Sort fields: name, surface, status.")
             .ProducesValidationProblems();
 
@@ -23,7 +23,7 @@ internal sealed class ListCourtsEndpoint : IEndpoint
     {
         var query = new ListCourtsQuery
         {
-            Page = request.Page,
+            Cursor = request.Cursor,
             PageSize = request.PageSize,
             Sort = request.Sort,
             Status = request.Status,

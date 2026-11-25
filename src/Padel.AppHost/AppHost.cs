@@ -8,6 +8,9 @@ var postgres = builder.AddPostgres("postgres")
 
 var database = postgres.AddDatabase("padel");
 
+// Shared rate-limit counters, so the limits hold across all API instances.
+var redis = builder.AddRedis("redis");
+
 // Fixed port (not the busy 8080), so the realm URL (token issuer) stays the same between runs. Aspire serves Keycloak over HTTPS
 // with the ASP.NET Core development certificate (`dotnet dev-certs https --trust`).
 // The realm is imported on first start; the data volume keeps users and their member_id attributes.
@@ -23,7 +26,9 @@ var migrations = builder.AddDotnetProject("migrations", "../Padel.MigrationServi
 
 builder.AddDotnetProject("api", "../Padel.Api/Padel.Api.csproj")
     .WithReference(database)
+    .WithReference(redis)
     .WaitForCompletion(migrations)
+    .WaitFor(redis)
     .WaitFor(keycloak)
     .WithEnvironment("Keycloak__Authority", ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/realms/padel"))
     .WithHttpHealthCheck("/health/ready")

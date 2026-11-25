@@ -1,6 +1,6 @@
 namespace Padel.Api.Features.Members;
 
-/// <summary>Body of <c>POST /api/members</c>.</summary>
+/// <summary>Body of <c>POST /api/v1/members</c>.</summary>
 public sealed record RegisterMemberRequest
 {
     public required string FirstName { get; init; }

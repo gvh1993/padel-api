@@ -7,31 +7,31 @@ namespace Padel.IntegrationTests.Clients;
 
 public interface ICourtsApi
 {
-    [Post("/api/courts")]
+    [Post("/api/v1/courts")]
     Task<IApiResponse<CreateCourtResponse>> Create([Body] CreateCourtRequest request);
 
-    [Get("/api/courts")]
+    [Get("/api/v1/courts")]
     Task<IApiResponse<ListCourtsResponse>> List([Query] CourtListParameters? parameters = null);
 
-    [Get("/api/courts/{id}")]
+    [Get("/api/v1/courts/{id}")]
     Task<IApiResponse<GetCourtResponse>> Get(Guid id);
 
-    [Put("/api/courts/{id}/name")]
+    [Put("/api/v1/courts/{id}/name")]
     Task<IApiResponse<RenameCourtResponse>> Rename(Guid id, [Body] RenameCourtRequest request, [Header("If-Match")] string? ifMatch = null);
 
-    [Put("/api/courts/{id}/maintenance")]
+    [Put("/api/v1/courts/{id}/maintenance")]
     Task<IApiResponse<SetCourtMaintenanceResponse>> SetMaintenance(Guid id, [Body] SetCourtMaintenanceRequest request);
 
-    [Post("/api/courts/{id}/retire")]
+    [Post("/api/v1/courts/{id}/retire")]
     Task<IApiResponse<RetireCourtResponse>> Retire(Guid id);
 
-    [Get("/api/courts/{id}/bookings")]
+    [Get("/api/v1/courts/{id}/bookings")]
     Task<IApiResponse<ListCourtBookingsResponse>> ListBookings(Guid id, [Query] BookingListParameters? parameters = null);
 }
 
 public sealed record CourtListParameters
 {
-    public int? Page { get; init; }
+    public string? Cursor { get; init; }
     public int? PageSize { get; init; }
     public string? Sort { get; init; }
     public CourtStatus? Status { get; init; }

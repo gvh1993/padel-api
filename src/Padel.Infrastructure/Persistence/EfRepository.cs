@@ -15,15 +15,13 @@ public abstract class EfRepository<T>(PadelDbContext context) : IRepository<T>
 
     public async Task<PagedResult<T>> ListAsync(ListOptions<T> options, CancellationToken cancellationToken = default)
     {
-        var filtered = Set.AsNoTracking().ApplyFilters(options);
-
-        var totalCount = await filtered.CountAsync(cancellationToken);
-        var items = await filtered
+        var window = await Set.AsNoTracking()
+            .ApplyFilters(options)
             .ApplySorting(options)
             .ApplyPaging(options)
             .ToListAsync(cancellationToken);
 
-        return PagedResult<T>.Create(items, options.Page, options.PageSize, totalCount);
+        return PagedResult.FromWindow(window, options);
     }
 
     public void Add(T entity) => Set.Add(entity);

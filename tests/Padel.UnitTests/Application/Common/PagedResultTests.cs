@@ -1,32 +1,50 @@
 using AwesomeAssertions;
 using Padel.Application.Common.Querying;
+using Padel.Application.Features.Courts;
+using Padel.Domain.Courts;
+using Padel.UnitTests.Builders;
 
 namespace Padel.UnitTests.Application.Common;
 
 public class PagedResultTests
 {
-    [Test]
-    [Arguments(0, 10, 0)]
-    [Arguments(1, 10, 1)]
-    [Arguments(10, 10, 1)]
-    [Arguments(11, 10, 2)]
-    public void Create_ShouldCalculateTotalPages(int totalCount, int pageSize, int expectedPages)
-    {
-        var page = PagedResult<int>.Create([], 1, pageSize, totalCount);
+    private static readonly ListOptions<Court> TwoPerPage = new(2, CourtSorting.Map.Resolve("name"));
 
-        page.TotalPages.Should().Be(expectedPages);
+    [Test]
+    [Arguments(0)]
+    [Arguments(1)]
+    [Arguments(2)]
+    public void FromWindow_WhenNoMoreThanThePageSize_ShouldBeTheLastPage(int count)
+    {
+        var window = CourtBuilder.New().Generate(count);
+
+        var page = PagedResult.FromWindow(window, TwoPerPage);
+
+        page.Items.Should().Equal(window);
+        page.NextCursor.Should().BeNull();
     }
 
     [Test]
-    public void Map_ShouldConvertItemsAndKeepPagingInfo()
+    public void FromWindow_WhenOneMoreThanThePageSize_ShouldDropItAndPointTheCursorAtTheLastItem()
     {
-        var page = PagedResult<int>.Create([1, 2], 2, 2, 5);
+        var window = CourtBuilder.New().Generate(3);
+
+        var page = PagedResult.FromWindow(window, TwoPerPage);
+
+        page.Items.Should().Equal(window.Take(2));
+        PageCursor.TryDecode(page.NextCursor!, TwoPerPage.Sorts, out var position).Should().BeTrue();
+        position!.Id.Should().Be(window[1].Id);
+        position.Keys.Should().Equal(window[1].Name);
+    }
+
+    [Test]
+    public void Map_ShouldConvertItemsAndKeepTheCursor()
+    {
+        var page = PagedResult<int>.Create([1, 2], "next");
 
         var mapped = page.Map(number => number.ToString());
 
-        mapped.Items.Should().BeEquivalentTo(new[] { "1", "2" });
-        mapped.Page.Should().Be(2);
-        mapped.TotalCount.Should().Be(5);
-        mapped.TotalPages.Should().Be(3);
+        mapped.Items.Should().Equal("1", "2");
+        mapped.NextCursor.Should().Be("next");
     }
 }

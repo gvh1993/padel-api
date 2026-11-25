@@ -2,8 +2,8 @@
 
 API for a padel club: members, courts and bookings.
 
-**Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
-**Tests:** TUnit (engine only) with AwesomeAssertions and AutoBogus builders. The integration tests use Testcontainers (PostgreSQL and Keycloak) and Refit; the architecture tests use NetArchTest.
+**Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Redis (rate limits), Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
+**Tests:** TUnit (engine only) with AwesomeAssertions, AutoBogus builders and NSubstitute. The integration tests use Testcontainers (PostgreSQL, Redis and Keycloak) and Refit; the architecture tests use NetArchTest.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ API for a padel club: members, courts and bookings.
 dotnet run --project src/Padel.AppHost     # or: aspire run
 ```
 
-The Aspire AppHost starts PostgreSQL and Keycloak (realm `padel`), runs the migration service and then starts the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
+The Aspire AppHost starts PostgreSQL, Redis and Keycloak (realm `padel`), runs the migration service and then starts the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
 
 | What | Where |
 | --- | --- |
@@ -40,12 +40,14 @@ The users and the password grant on `padel-scalar` are for development only.
 
 ## Architecture
 
+The reasons behind the design are recorded as Architecture Decision Records in [docs/adr](docs/adr/README.md). [CLAUDE.md](CLAUDE.md) summarises the commands and coding rules for coding agents, and `.claude/skills` has step-by-step guides for adding a use case, a migration or an ADR.
+
 | Project | Responsibility |
 | --- | --- |
 | `Padel.Domain` | Aggregates (`Member`, `Court`, `Booking`), value objects (`Email`, `FullName`, `TimeSlot`) and domain events. No dependencies. |
-| `Padel.Application` | Use cases as vertical slices, plus the in-house dispatcher with pipeline behaviors (telemetry, validation) and paging, filtering and sorting. |
+| `Padel.Application` | Use cases as vertical slices, plus the in-house dispatcher with pipeline behaviors (telemetry, validation) and cursor paging, filtering and sorting. |
 | `Padel.Infrastructure` | EF Core and PostgreSQL, repositories and the unit of work. It owns the database's telemetry (Npgsql, the application's spans) and the database readiness check. |
-| `Padel.Api` | Minimal API endpoints per feature, Keycloak JWT authentication, RFC 9457 problem details, and OpenAPI with Scalar. |
+| `Padel.Api` | Minimal API endpoints per feature, Keycloak JWT authentication, RFC 9457 problem details, API versioning (Asp.Versioning), and OpenAPI with Scalar. |
 | `Padel.ServiceDefaults` | Cross-cutting service defaults: OpenTelemetry export, health endpoints, service discovery and HTTP resilience. |
 | `Padel.MigrationService` | Applies the EF Core migrations, then exits. The API never migrates on start-up. |
 | `Padel.AppHost` | The Aspire app model for local development. |
@@ -60,7 +62,7 @@ src/Padel.Application/Features/Members/
         RegisterMemberCommandValidator.cs
     UpdateMemberProfile/ ...
 src/Padel.Api/Features/Members/
-    MembersGroup.cs                         the /api/members route group
+    MembersGroup.cs                         the /api/v1/members route group
     RegisterMember/
         RegisterMemberRequest.cs            the body (or query string, for lists)
         RegisterMemberEndpoint.cs           maps the route; request → command → response
@@ -88,6 +90,8 @@ Endpoints implement `IEndpoint` and are mapped automatically at start-up. Reques
 Aggregates raise domain events, such as `BookingCreated` and `BookingCancelled`. The unit of work stores them in the `OutboxMessages` table in the same transaction as the change, so either both are saved or neither is.
 
 The `OutboxProcessor` (a background service) then hands them to their handlers after the commit. Several instances can run at once because batches are locked with `FOR UPDATE SKIP LOCKED`. A failing handler is retried, up to `Outbox:MaxAttempts` times; the error is kept in `LastError`.
+
+The `OutboxCleaner` deletes handled messages once they are older than `Outbox:Retention` (default 7 days), every `Outbox:CleanupInterval` (default 1 hour). Messages that failed `Outbox:MaxAttempts` times are kept, so someone can look at them.
 
 The booking handlers send a confirmation and a cancellation notice to the member, with the time in the club's time zone. `LoggingNotificationSender` only writes them to the log. Replace it with a real email sender once the club has one.
 
@@ -132,7 +136,7 @@ The club's rules are in `Club:Bookings` (`BookingPolicy`):
 | Upcoming bookings per member | 3 |
 | Members can cancel up to … before the start (admins until the start) | 2 hours |
 
-A booking also lasts 30 minutes to 3 hours, is in the future, and needs an active member and an available court. A member cannot be on two courts at the same time. Send an `Idempotency-Key` header with `POST /api/bookings` to retry safely: a retry with the same key returns the same booking.
+A booking also lasts 30 minutes to 3 hours, is in the future, and needs an active member and an available court. A member cannot be on two courts at the same time. Send an `Idempotency-Key` header with `POST /api/v1/bookings` to retry safely: a retry with the same key returns the same booking.
 
 Changes accept `If-Match` with the `ETag` from a previous response. When the resource changed in the meantime, the API returns 412 and does not apply the change.
 
@@ -149,13 +153,22 @@ Violations of these constraints return **409 Conflict**.
 
 - **JSON:** requests and responses are JSON. Enums are written as strings.
 - **Errors:** RFC 9457 problem details (`application/problem+json`). Each problem includes a `traceId`. Application errors also include an `errorCode`, such as `Member.EmailInUse`, that clients can rely on.
-- **Lists:** every list endpoint supports `page`, `pageSize` (1–100) and `sort`, for example `sort=lastName,-registeredOn`. A `-` before a field sorts it descending. Each list also has its own filters:
-  - `GET /api/members`: `status`, `search`
-  - `GET /api/courts`: `status`, `surface`, `search`
-  - `GET /api/bookings`: `memberId`, `courtId`, `status`, `from`, `to`
-  - `GET /api/courts/{id}/bookings`: `status`, `from`, `to`
+- **Versions:** the version is part of the path: `/api/v1/members`. Every response has an `api-supported-versions` header. An unknown version, such as `/api/v2/members`, returns 404. Each version has its own OpenAPI document (`/openapi/v1.json`). To add a version, add it to `ApiVersioning.Versions` in `Padel.Api/Http/ApiVersioning.cs`; endpoints that differ between versions use `MapToApiVersion`.
+- **Lists:** every list endpoint uses cursor paging with `cursor`, `pageSize` (1–100) and `sort`, for example `sort=lastName,-registeredOn`. A `-` before a field sorts it descending. Each list also has its own filters:
+  - `GET /api/v1/members`: `status`, `search`
+  - `GET /api/v1/courts`: `status`, `surface`, `search`
+  - `GET /api/v1/bookings`: `memberId`, `courtId`, `status`, `from`, `to`
+  - `GET /api/v1/courts/{id}/bookings`: `status`, `from`, `to`
 
-  The response contains `items`, `page`, `pageSize`, `totalCount` and `totalPages`. Unknown sort fields return a 400 that lists the allowed fields.
+  The response contains `items` and `nextCursor`. To get the next page, send `nextCursor` back as `cursor` with the same `sort` and filters. On the last page, `nextCursor` is `null`.
+
+  How it works:
+  - The cursor is opaque: base64url JSON with the sort keys and id of the last item. The next page starts after that item (keyset paging), so the database does not count or skip rows, and items that are added or removed between requests do not cause skipped or repeated items.
+  - The id breaks ties between equal sort keys. Enums sort by their order in the enum.
+  - A cursor only works with the sort it was made for. A cursor for another sort, or one that is not valid, returns a 400.
+  - Paging only goes forward, and there is no total count.
+
+  Unknown sort fields return a 400 that lists the allowed fields.
 - **Status codes:**
 
   | Code | Meaning |
@@ -181,9 +194,22 @@ Each caller has request limits per minute: the account (`sub`) when signed in, o
 | Limit | Default | Setting |
 | --- | --- | --- |
 | All of `/api` | 120 requests | `RateLimiting:PermitsPerMinute` |
-| `POST /api/bookings` | 10 new bookings | `RateLimiting:BookingPermitsPerMinute` |
+| `POST /api/v1/bookings` | 10 new bookings | `RateLimiting:BookingPermitsPerMinute` |
 
 A caller over the limit gets a **429** problem with a `Retry-After` header. Health checks and the documentation are not limited.
+
+The counters are kept in Redis when the connection string `ConnectionStrings:redis` is set (Aspire sets it), so the limits hold across all API instances. Without it, each instance counts on its own, which is fine for a single instance. When Redis cannot be reached, requests are let through without a limit and a warning is logged: an unavailable rate-limit store should not take the API down. Set `RateLimiting:KeyPrefix` (default `padel`) when several apps or environments share one Redis.
+
+## Behind a reverse proxy
+
+Behind a reverse proxy or ingress, the API takes the client's address and scheme from `X-Forwarded-For` and `X-Forwarded-Proto`. It uses them for logs, rate limiting and the links it returns (`Location`). It only trusts these headers from localhost and from the proxies you configure:
+
+| Setting | Example |
+| --- | --- |
+| `ForwardedHeaders:KnownProxies` | `["10.0.0.5"]` (IP addresses) |
+| `ForwardedHeaders:KnownNetworks` | `["10.0.0.0/8"]` (CIDR, for example the cluster network) |
+
+Headers from any other address are ignored, so clients cannot fake their address.
 
 ## Health checks
 
@@ -207,7 +233,7 @@ dotnet test
 | --- | --- |
 | `Padel.UnitTests` | Domain and Application, using in-memory fakes. |
 | `Padel.ArchitectureTests` | Layer dependencies, vertical slices and naming conventions. |
-| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
+| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL, Redis and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
 
 Test names follow `Action_GivenState_ShouldOutcome` (existing data or the caller) or `Action_WhenInput_ShouldOutcome` (what the action receives), for example `CreateBooking_GivenSuspendedMember_ShouldReturn422` and `CreateBooking_WhenSlotInThePast_ShouldReturn422`. Tests without a scenario are named `Action_ShouldOutcome`.
 
@@ -220,7 +246,9 @@ var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com").Suspe
 var request = CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(start).Generate();
 ```
 
-Set only the values the test depends on; the rest is random. The unit tests have builders for the entities (`MemberBuilder`, `CourtBuilder`, `BookingBuilder`). These create the entity through its domain factory, then set every property with a rule, because AutoFaker would otherwise fill private setters with random values. The builders produce a given state directly. Tests of the domain rules themselves call the factories (`Booking.Create`, `Member.Register`). The integration tests have builders for the API requests.
+Set only the values the test depends on; the rest is random.
+
+Handler tests use `HandlerFixture`: in-memory repositories that run the same LINQ as EF Core, a `FakeUnitOfWork` that collects domain events, a `FakeTimeProvider` and a `FakeCurrentUser`. NSubstitute is only used for interactions and failure injection, for example to check that a notification was sent or to make a save fail. Repositories are not mocked ([ADR 14](docs/adr/0014-test-strategy.md)). The unit tests have builders for the entities (`MemberBuilder`, `CourtBuilder`, `BookingBuilder`). These create the entity through its domain factory, then set every property with a rule, because AutoFaker would otherwise fill private setters with random values. The builders produce a given state directly. Tests of the domain rules themselves call the factories (`Booking.Create`, `Member.Register`). The integration tests have builders for the API requests.
 
 ## CI and container images
 
@@ -230,6 +258,8 @@ Set only the values the test depends on; the rest is random. The unit tests have
 2. It checks that the model has no changes without a migration.
 3. It runs all tests, including the integration tests with Testcontainers. The TRX and coverage files are uploaded as artifacts.
 4. It builds both container images.
+
+The actions are pinned to a commit SHA, with the version in a comment, and the NuGet packages are cached. [Dependabot](.github/dependabot.yml) opens weekly pull requests for NuGet packages (grouped, for example all of Aspire together) and for the actions.
 
 To build the images locally (Docker required):
 

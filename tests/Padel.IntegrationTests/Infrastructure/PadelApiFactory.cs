@@ -9,12 +9,13 @@ using Padel.Application.Common.Notifications;
 using Padel.Infrastructure.Persistence;
 using Testcontainers.Keycloak;
 using Testcontainers.PostgreSql;
+using Testcontainers.Redis;
 using TUnit.Core.Interfaces;
 
 namespace Padel.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Starts one PostgreSQL container, one Keycloak container (with the realm from the AppHost) and one
+/// Starts one PostgreSQL container, one Redis container (rate limits), one Keycloak container (with the realm from the AppHost) and one
 /// API host for the whole test session. The database is migrated before the API starts.
 /// </summary>
 public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInitializer
@@ -23,6 +24,8 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
     private const string KeycloakAdminPassword = "admin";
 
     private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:17-alpine").Build();
+
+    private readonly RedisContainer _redis = new RedisBuilder("redis:8-alpine").Build();
 
     // Same image as the Aspire AppHost uses.
     private readonly KeycloakContainer _keycloak = new KeycloakBuilder("quay.io/keycloak/keycloak:26.8")
@@ -46,7 +49,7 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
 
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(_database.StartAsync(), _keycloak.StartAsync());
+        await Task.WhenAll(_database.StartAsync(), _redis.StartAsync(), _keycloak.StartAsync());
 
         _keycloakClient = new HttpClient { BaseAddress = new Uri(_keycloak.GetBaseAddress()) };
         Tokens = new KeycloakTokens(_keycloakClient, KeycloakAdminUsername, KeycloakAdminPassword);
@@ -70,10 +73,12 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:padel", _database.GetConnectionString());
+        builder.UseSetting("ConnectionStrings:redis", _redis.GetConnectionString());
         builder.UseSetting("Keycloak:Authority", Tokens.Authority);
         builder.UseSetting("Keycloak:RequireHttpsMetadata", "false");
         builder.UseSetting("OpenApi:Enabled", "true");
         builder.UseSetting("Outbox:PollingInterval", "00:00:00.100");
+        builder.UseSetting("Outbox:CleanupInterval", "00:00:00.200");
 
         // Tests send many requests per account; RateLimitingTests uses its own, low limits.
         builder.UseSetting("RateLimiting:PermitsPerMinute", "100000");
@@ -86,7 +91,7 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
     {
         await base.DisposeAsync();
         _keycloakClient?.Dispose();
-        await Task.WhenAll(_database.DisposeAsync().AsTask(), _keycloak.DisposeAsync().AsTask());
+        await Task.WhenAll(_database.DisposeAsync().AsTask(), _redis.DisposeAsync().AsTask(), _keycloak.DisposeAsync().AsTask());
     }
 
     private sealed class BearerTokenHandler(Func<Task<string>> token) : DelegatingHandler

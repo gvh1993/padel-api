@@ -1,5 +1,7 @@
 using AwesomeAssertions;
 using FluentValidation;
+using NSubstitute;
+using Padel.Application.Common.Messaging;
 using Padel.Application.Common.Behaviors;
 using Padel.Application.Features.Members;
 using Padel.Domain.Common;
@@ -10,7 +12,9 @@ public class ValidationBehaviorTests
 {
     private static readonly MemberDto Dto = new() { FirstName = "ok" };
 
-    private static Task<Result<MemberDto>> Next() => Task.FromResult<Result<MemberDto>>(Dto);
+    private readonly RequestHandlerDelegate<MemberDto> _next = Substitute.For<RequestHandlerDelegate<MemberDto>>();
+
+    public ValidationBehaviorTests() => _next().Returns(Dto);
 
     [Test]
     public async Task Handle_WhenValidRequest_ShouldCallNext()
@@ -18,9 +22,10 @@ public class ValidationBehaviorTests
         var behavior = new ValidationBehavior<RegisterMemberCommand, MemberDto>([new RegisterMemberCommandValidator()]);
         var command = new RegisterMemberCommand { FirstName = "Jan", LastName = "Jansen", Email = "jan@example.com" };
 
-        var result = await behavior.Handle(command, Next, CancellationToken.None);
+        var result = await behavior.Handle(command, _next, CancellationToken.None);
 
         result.ShouldSucceed().Should().BeSameAs(Dto);
+        await _next.Received(1)();
     }
 
     [Test]
@@ -28,19 +33,10 @@ public class ValidationBehaviorTests
     {
         var behavior = new ValidationBehavior<RegisterMemberCommand, MemberDto>([new RegisterMemberCommandValidator()]);
         var command = new RegisterMemberCommand { FirstName = "", LastName = "Jansen", Email = "nope" };
-        var nextCalled = false;
-
-        var error = await behavior.Handle(
-            command,
-            () =>
-            {
-                nextCalled = true;
-                return Next();
-            },
-            CancellationToken.None).ShouldFail().Is<ValidationError>();
+        var error = await behavior.Handle(command, _next, CancellationToken.None).ShouldFail().Is<ValidationError>();
 
         error.FieldErrors.Keys.Should().BeEquivalentTo(new[] { "FirstName", "Email" });
-        nextCalled.Should().BeFalse();
+        await _next.DidNotReceive()();
     }
 
     [Test]
@@ -49,7 +45,7 @@ public class ValidationBehaviorTests
         var behavior = new ValidationBehavior<RegisterMemberCommand, MemberDto>(Array.Empty<IValidator<RegisterMemberCommand>>());
         var command = new RegisterMemberCommand { FirstName = "", LastName = "", Email = "" };
 
-        var result = await behavior.Handle(command, Next, CancellationToken.None);
+        var result = await behavior.Handle(command, _next, CancellationToken.None);
 
         result.ShouldSucceed().Should().BeSameAs(Dto);
     }
