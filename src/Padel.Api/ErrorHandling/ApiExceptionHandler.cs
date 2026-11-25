@@ -7,7 +7,7 @@ using Padel.Domain.Common;
 namespace Padel.Api.ErrorHandling;
 
 /// <summary>
-/// Translates exceptions into RFC 9457 problem details (JSON or XML, following the Accept header).
+/// Translates exceptions into RFC 9457 problem details.
 /// </summary>
 internal sealed class ApiExceptionHandler(
     IProblemDetailsService problemDetailsService,

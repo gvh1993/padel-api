@@ -19,13 +19,12 @@ internal static class CourtEndpoints
         courts.MapPost("/", async (CreateCourtCommand command, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
             {
                 var court = await dispatcher.Send<CreateCourtCommand, CourtDto>(command, cancellationToken);
-                return Negotiated.CreatedAtRoute("GetCourt", new { id = court.Id }, court);
+                return TypedResults.CreatedAtRoute(court, "GetCourt", new { id = court.Id });
             })
             .RequireAuthorization(PadelAuthorization.AdminPolicy)
             .WithName("CreateCourt")
             .WithSummary("Creates a court.")
             .WithDescription("Admin only.")
-            .ProducesNegotiated<CourtDto>(StatusCodes.Status201Created)
             .ProducesValidationProblems();
 
         courts.MapGet("/", async (
@@ -46,48 +45,43 @@ internal static class CourtEndpoints
                     Search = search,
                 };
 
-                return Negotiated.Ok(await dispatcher.Send<ListCourtsQuery, PagedResult<CourtDto>>(query, cancellationToken));
+                return TypedResults.Ok(await dispatcher.Send<ListCourtsQuery, PagedResult<CourtDto>>(query, cancellationToken));
             })
             .WithName("ListCourts")
             .WithSummary("Lists courts with paging, sorting and filtering.")
             .WithDescription("Sort fields: name, surface, status.")
-            .ProducesNegotiated<PagedResult<CourtDto>>()
             .ProducesValidationProblems();
 
         courts.MapGet("/{id:guid}", async (Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<GetCourtQuery, CourtDto>(new GetCourtQuery(id), cancellationToken)))
+                TypedResults.Ok(await dispatcher.Send<GetCourtQuery, CourtDto>(new GetCourtQuery(id), cancellationToken)))
             .WithName("GetCourt")
             .WithSummary("Gets a court.")
-            .ProducesNegotiated<CourtDto>()
             .ProducesProblems(StatusCodes.Status404NotFound);
 
         courts.MapPut("/{id:guid}/name", async (Guid id, RenameCourtRequest request, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<RenameCourtCommand, CourtDto>(new RenameCourtCommand(id, request.Name), cancellationToken)))
+                TypedResults.Ok(await dispatcher.Send<RenameCourtCommand, CourtDto>(new RenameCourtCommand(id, request.Name), cancellationToken)))
             .RequireAuthorization(PadelAuthorization.AdminPolicy)
             .WithName("RenameCourt")
             .WithSummary("Renames a court.")
             .WithDescription("Admin only.")
-            .ProducesNegotiated<CourtDto>()
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound);
 
         courts.MapPut("/{id:guid}/maintenance", async (Guid id, SetCourtMaintenanceRequest request, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<SetCourtMaintenanceCommand, CourtDto>(
+                TypedResults.Ok(await dispatcher.Send<SetCourtMaintenanceCommand, CourtDto>(
                     new SetCourtMaintenanceCommand(id, request.UnderMaintenance), cancellationToken)))
             .RequireAuthorization(PadelAuthorization.AdminPolicy)
             .WithName("SetCourtMaintenance")
             .WithSummary("Puts a court in or out of maintenance. Courts in maintenance cannot be booked.")
             .WithDescription("Admin only.")
-            .ProducesNegotiated<CourtDto>()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
         courts.MapPost("/{id:guid}/retire", async (Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<RetireCourtCommand, CourtDto>(new RetireCourtCommand(id), cancellationToken)))
+                TypedResults.Ok(await dispatcher.Send<RetireCourtCommand, CourtDto>(new RetireCourtCommand(id), cancellationToken)))
             .RequireAuthorization(PadelAuthorization.AdminPolicy)
             .WithName("RetireCourt")
             .WithSummary("Retires a court permanently.")
             .WithDescription("Admin only. Retiring a retired court has no effect.")
-            .ProducesNegotiated<CourtDto>()
             .ProducesProblems(StatusCodes.Status404NotFound);
 
         courts.MapGet("/{id:guid}/bookings", async (
@@ -110,12 +104,11 @@ internal static class CourtEndpoints
                     To = to,
                 };
 
-                return Negotiated.Ok(await dispatcher.Send<ListCourtBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken));
+                return TypedResults.Ok(await dispatcher.Send<ListCourtBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken));
             })
             .WithName("ListCourtBookings")
             .WithSummary("Lists the bookings (schedule) of a court.")
             .WithDescription("Sort fields: start, end, status, createdOn.")
-            .ProducesNegotiated<PagedResult<BookingDto>>()
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound);
 

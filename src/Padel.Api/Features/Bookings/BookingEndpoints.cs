@@ -17,14 +17,13 @@ internal static class BookingEndpoints
         bookings.MapPost("/", async (CreateBookingCommand command, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
             {
                 var booking = await dispatcher.Send<CreateBookingCommand, BookingDto>(command, cancellationToken);
-                return Negotiated.CreatedAtRoute("GetBooking", new { id = booking.Id }, booking);
+                return TypedResults.CreatedAtRoute(booking, "GetBooking", new { id = booking.Id });
             })
             .WithName("CreateBooking")
             .WithSummary("Books a court.")
             .WithDescription(
                 "Members can only book for themselves; admins for anyone. The member must be active, " +
                 "the court available, the slot in the future, 30 minutes to 3 hours long and free.")
-            .ProducesNegotiated<BookingDto>(StatusCodes.Status201Created)
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status422UnprocessableEntity);
 
@@ -50,47 +49,42 @@ internal static class BookingEndpoints
                     To = to,
                 };
 
-                return Negotiated.Ok(await dispatcher.Send<ListBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken));
+                return TypedResults.Ok(await dispatcher.Send<ListBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken));
             })
             .WithName("ListBookings")
             .WithSummary("Lists bookings with paging, sorting and filtering.")
             .WithDescription("Admins see all bookings; members only their own. Sort fields: start, end, status, createdOn.")
-            .ProducesNegotiated<PagedResult<BookingDto>>()
             .ProducesValidationProblems();
 
         bookings.MapGet("/{id:guid}", async (Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<GetBookingQuery, BookingDto>(new GetBookingQuery(id), cancellationToken)))
+                TypedResults.Ok(await dispatcher.Send<GetBookingQuery, BookingDto>(new GetBookingQuery(id), cancellationToken)))
             .WithName("GetBooking")
             .WithSummary("Gets a booking.")
             .WithDescription("Admins, or the member who made the booking.")
-            .ProducesNegotiated<BookingDto>()
             .ProducesProblems(StatusCodes.Status404NotFound);
 
         bookings.MapPost("/{id:guid}/cancel", async (Guid id, CancelBookingRequest? request, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<CancelBookingCommand, BookingDto>(new CancelBookingCommand(id, request?.Reason), cancellationToken)))
+                TypedResults.Ok(await dispatcher.Send<CancelBookingCommand, BookingDto>(new CancelBookingCommand(id, request?.Reason), cancellationToken)))
             .WithName("CancelBooking")
             .WithSummary("Cancels a booking.")
             .WithDescription("Admins, or the member who made the booking.")
-            .ProducesNegotiated<BookingDto>()
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
         bookings.MapPost("/{id:guid}/complete", async (Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<CompleteBookingCommand, BookingDto>(new CompleteBookingCommand(id), cancellationToken)))
+                TypedResults.Ok(await dispatcher.Send<CompleteBookingCommand, BookingDto>(new CompleteBookingCommand(id), cancellationToken)))
             .RequireAuthorization(PadelAuthorization.AdminPolicy)
             .WithName("CompleteBooking")
             .WithSummary("Marks a booking as played.")
             .WithDescription("Admin only. Only after the slot has started.")
-            .ProducesNegotiated<BookingDto>()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
         bookings.MapPost("/{id:guid}/no-show", async (Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-                Negotiated.Ok(await dispatcher.Send<MarkBookingNoShowCommand, BookingDto>(new MarkBookingNoShowCommand(id), cancellationToken)))
+                TypedResults.Ok(await dispatcher.Send<MarkBookingNoShowCommand, BookingDto>(new MarkBookingNoShowCommand(id), cancellationToken)))
             .RequireAuthorization(PadelAuthorization.AdminPolicy)
             .WithName("MarkBookingNoShow")
             .WithSummary("Marks a booking as a no-show.")
             .WithDescription("Admin only. Only after the slot has started.")
-            .ProducesNegotiated<BookingDto>()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
         return routes;

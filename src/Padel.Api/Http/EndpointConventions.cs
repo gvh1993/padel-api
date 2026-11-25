@@ -6,45 +6,30 @@ namespace Padel.Api.Http;
 
 internal static class EndpointConventions
 {
-    private static readonly string[] ProblemContentTypes = [ContentNegotiation.ProblemJson, ContentNegotiation.ProblemXml];
-
-    /// <summary>
-    /// A route group for one feature: JSON or XML responses, 406 for other formats, and the shared error responses.
-    /// </summary>
+    /// <summary>A route group for one feature, documenting the error responses every endpoint can return.</summary>
     public static RouteGroupBuilder MapFeatureGroup(this IEndpointRouteBuilder routes, string prefix, string tag)
     {
         var group = routes.MapGroup(prefix).WithTags(tag);
 
-        group.AddEndpointFilter(async (context, next) =>
-            ContentNegotiation.Select(context.HttpContext.Request) is null
-                ? TypedResults.Problem(
-                    statusCode: StatusCodes.Status406NotAcceptable,
-                    detail: $"Supported response formats are {ContentNegotiation.Json} and {ContentNegotiation.Xml}.")
-                : await next(context));
-
         group.WithMetadata(
-            new ProducesResponseTypeMetadata(StatusCodes.Status401Unauthorized, typeof(ProblemDetails), ProblemContentTypes),
-            new ProducesResponseTypeMetadata(StatusCodes.Status403Forbidden, typeof(ProblemDetails), ProblemContentTypes),
-            new ProducesResponseTypeMetadata(StatusCodes.Status406NotAcceptable, typeof(ProblemDetails), ProblemContentTypes));
+            new ProducesResponseTypeMetadata(StatusCodes.Status401Unauthorized, typeof(ProblemDetails), ["application/problem+json"]),
+            new ProducesResponseTypeMetadata(StatusCodes.Status403Forbidden, typeof(ProblemDetails), ["application/problem+json"]));
 
         return group;
     }
-
-    public static RouteHandlerBuilder ProducesNegotiated<T>(this RouteHandlerBuilder builder, int statusCode = StatusCodes.Status200OK) =>
-        builder.Produces<T>(statusCode, ContentNegotiation.Json, ContentNegotiation.Xml);
 
     public static RouteHandlerBuilder ProducesProblems(this RouteHandlerBuilder builder, params int[] statusCodes)
     {
         foreach (var statusCode in statusCodes)
         {
-            builder.Produces<ProblemDetails>(statusCode, ContentNegotiation.ProblemJson, ContentNegotiation.ProblemXml);
+            builder.ProducesProblem(statusCode);
         }
 
         return builder;
     }
 
     public static RouteHandlerBuilder ProducesValidationProblems(this RouteHandlerBuilder builder) =>
-        builder.Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest, ContentNegotiation.ProblemJson, ContentNegotiation.ProblemXml);
+        builder.ProducesValidationProblem();
 }
 
 /// <summary>Paging and sorting query parameters shared by every list endpoint.</summary>

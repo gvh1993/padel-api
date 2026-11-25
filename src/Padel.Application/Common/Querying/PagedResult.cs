@@ -1,7 +1,7 @@
 namespace Padel.Application.Common.Querying;
 
 /// <summary>
-/// One page of results. Uses a concrete list and settable properties so it serializes to both JSON and XML.
+/// One page of results.
 /// </summary>
 public sealed record PagedResult<T>
 {

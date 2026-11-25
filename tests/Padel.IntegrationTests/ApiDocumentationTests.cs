@@ -8,7 +8,7 @@ namespace Padel.IntegrationTests;
 public class ApiDocumentationTests(PadelApiFactory factory) : IntegrationTestBase(factory)
 {
     [Test]
-    public async Task OpenApiDocument_Should_BeAnonymousAndDescribeKeycloakAuthAndXml()
+    public async Task OpenApiDocument_Should_BeAnonymousAndDescribeKeycloakAuthAndProblems()
     {
         using var response = await Anonymous.Raw.Get("openapi/v1.json");
 
@@ -25,11 +25,9 @@ public class ApiDocumentationTests(PadelApiFactory factory) : IntegrationTestBas
         var getCourt = root.GetProperty("paths").GetProperty("/api/courts/{id}").GetProperty("get");
         var content = getCourt.GetProperty("responses").GetProperty("200").GetProperty("content");
         await Assert.That(content.TryGetProperty("application/json", out _)).IsTrue();
-        await Assert.That(content.TryGetProperty("application/xml", out _)).IsTrue();
 
         var notFound = getCourt.GetProperty("responses").GetProperty("404").GetProperty("content");
         await Assert.That(notFound.TryGetProperty("application/problem+json", out _)).IsTrue();
-        await Assert.That(notFound.TryGetProperty("application/problem+xml", out _)).IsTrue();
     }
 
     [Test]

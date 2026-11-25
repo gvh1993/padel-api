@@ -17,7 +17,7 @@ internal sealed class PadelDocumentTransformer(IOptions<KeycloakOptions> keycloa
         document.Info.Title = "Padel API";
         document.Info.Description =
             "Members, courts and bookings for a padel club. " +
-            "Responses are JSON by default; send `Accept: application/xml` for XML. Errors are RFC 9457 problem details. " +
+            "Errors are RFC 9457 problem details. " +
             "List endpoints support `page`, `pageSize` and `sort` (e.g. `lastName,-registeredOn`) plus resource-specific filters.";
 
         var openIdConnect = keycloakOptions.Value.Authority.TrimEnd('/') + "/protocol/openid-connect";

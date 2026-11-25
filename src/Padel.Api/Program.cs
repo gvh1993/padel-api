@@ -6,7 +6,6 @@ using Padel.Api.ErrorHandling;
 using Padel.Api.Features.Bookings;
 using Padel.Api.Features.Courts;
 using Padel.Api.Features.Members;
-using Padel.Api.Http;
 using Padel.Api.OpenApi;
 using Padel.Application;
 using Padel.Infrastructure;
@@ -26,8 +25,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Report binding failures (e.g. an unknown enum value in the query string) as problem details.
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 
-// RFC 9457 problem details. The XML writer must be registered first: the first writer that accepts the request wins.
-builder.Services.AddSingleton<IProblemDetailsWriter, XmlProblemDetailsWriter>();
+// RFC 9457 problem details for every error, with the trace id to find it in the logs.
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions["traceId"] = Activity.Current?.Id ?? context.HttpContext.TraceIdentifier);
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();

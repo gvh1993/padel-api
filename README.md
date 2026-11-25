@@ -48,7 +48,7 @@ The users and the password grant on `padel-scalar` are for development only.
 | `Padel.Domain` | Aggregates (`Member`, `Court`, `Booking`), value objects (`Email`, `FullName`, `TimeSlot`) and domain events. No dependencies. |
 | `Padel.Application` | Use cases as vertical slices, plus the in-house dispatcher with pipeline behaviors (telemetry, validation) and paging, filtering and sorting. |
 | `Padel.Infrastructure` | EF Core and PostgreSQL, repositories and the unit of work. It owns the database's telemetry (Npgsql, the application's spans) and the database readiness check. |
-| `Padel.Api` | Minimal API endpoints per feature, Keycloak JWT authentication, RFC 9457 problem details, JSON/XML content negotiation, and OpenAPI with Scalar. |
+| `Padel.Api` | Minimal API endpoints per feature, Keycloak JWT authentication, RFC 9457 problem details, and OpenAPI with Scalar. |
 | `Padel.ServiceDefaults` | Cross-cutting service defaults: OpenTelemetry export, health endpoints, service discovery and HTTP resilience. |
 | `Padel.AppHost` | The Aspire app model for local development. |
 
@@ -82,8 +82,8 @@ Violations of these constraints return **409 Conflict**.
 
 ## API conventions
 
-- **JSON or XML:** JSON is the default. Send `Accept: application/xml` (or prefer it with `q` values) to get XML. Any other format returns **406**.
-- **Errors:** RFC 9457 problem details in the format of the response: `application/problem+json`, or `application/problem+xml` (RFC 9457 appendix B). Each problem includes a `traceId`.
+- **JSON:** requests and responses are JSON. Enums are written as strings.
+- **Errors:** RFC 9457 problem details (`application/problem+json`). Each problem includes a `traceId`.
 - **Lists:** every list endpoint supports `page`, `pageSize` (1–100) and `sort`, for example `sort=lastName,-registeredOn`. A `-` before a field sorts it descending. Each list also has its own filters:
   - `GET /api/members`: `status`, `search`
   - `GET /api/courts`: `status`, `surface`, `search`
@@ -99,7 +99,6 @@ Violations of these constraints return **409 Conflict**.
   | 401 | Not authenticated |
   | 403 | Not allowed |
   | 404 | Not found |
-  | 406 | Response format not supported |
   | 409 | Conflict |
   | 422 | A business rule was violated |
 
