@@ -12,7 +12,7 @@ internal sealed class CancelBookingEndpoint : IEndpoint
             .MapPost("/{id:guid}/cancel", HandleAsync)
             .WithName("CancelBooking")
             .WithSummary("Cancels a booking.")
-            .WithDescription("Admins, or the member who made the booking.")
+            .WithDescription("Admins (until the booking starts), or the member who made the booking (up to the cancellation notice before the start).")
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 

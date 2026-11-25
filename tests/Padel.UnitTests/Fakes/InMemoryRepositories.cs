@@ -23,4 +23,17 @@ public sealed class InMemoryBookingRepository : InMemoryRepository<Booking>, IBo
             booking.CourtId == courtId
             && booking.Status != BookingStatus.Cancelled
             && booking.Slot.Overlaps(slot)));
+
+    public Task<bool> MemberHasOverlapAsync(Guid memberId, TimeSlot slot, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Store.Any(booking =>
+            booking.MemberId == memberId
+            && booking.Status != BookingStatus.Cancelled
+            && booking.Slot.Overlaps(slot)));
+
+    public Task<int> CountUpcomingAsync(Guid memberId, DateTimeOffset now, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Store.Count(booking =>
+            booking.MemberId == memberId && booking.Status == BookingStatus.Confirmed && booking.Slot.Start > now));
+
+    public Task<Booking?> FindByIdempotencyKeyAsync(Guid memberId, string idempotencyKey, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Store.FirstOrDefault(booking => booking.MemberId == memberId && booking.IdempotencyKey == idempotencyKey));
 }

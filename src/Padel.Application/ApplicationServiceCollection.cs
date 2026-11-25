@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Padel.Application.Common.Behaviors;
 using Padel.Application.Common.Messaging;
+using Padel.Domain.Bookings;
 
 namespace Padel.Application;
 
@@ -23,6 +24,11 @@ public static class ApplicationServiceCollection
         services.TryAddScoped<IRequestDispatcher, RequestDispatcher>();
         services.TryAddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.TryAddSingleton(TimeProvider.System);
+
+        // The club's booking rules; the host binds them from configuration.
+        services.AddOptions<BookingPolicy>()
+            .Validate(policy => policy.IsValid(), "The booking policy is invalid: check the time zone, opening hours, slot minutes and limits.")
+            .ValidateOnStart();
 
         services.AddValidatorsFromAssembly(assembly, ServiceLifetime.Scoped);
 

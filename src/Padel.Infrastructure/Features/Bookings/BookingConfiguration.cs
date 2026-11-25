@@ -25,6 +25,13 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.Property(booking => booking.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(booking => booking.CancellationReason).HasMaxLength(Reason.MaxLength);
         builder.Property(booking => booking.CreatedOn);
+        builder.Property(booking => booking.IdempotencyKey).HasMaxLength(100);
+
+        // A key identifies one booking request per member.
+        builder.HasIndex(booking => new { booking.MemberId, booking.IdempotencyKey })
+            .HasDatabaseName(DatabaseConstraints.BookingIdempotencyKeyUnique)
+            .IsUnique()
+            .HasFilter("\"IdempotencyKey\" IS NOT NULL");
 
         builder.HasOne<Member>().WithMany().HasForeignKey(booking => booking.MemberId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Court>().WithMany().HasForeignKey(booking => booking.CourtId).OnDelete(DeleteBehavior.Restrict);
@@ -33,7 +40,7 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
 
         builder.Ignore(booking => booking.DomainEvents);
 
-        // The exclusion constraint that prevents overlapping bookings is created in the
-        // InitialCreate migration (EF Core cannot model exclusion constraints).
+        // The exclusion constraints that prevent overlapping bookings (per court and per member) are
+        // created in the migrations with SQL, because EF Core cannot model exclusion constraints.
     }
 }

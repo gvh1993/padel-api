@@ -10,6 +10,7 @@ public class BookingTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 25, 9, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Tomorrow = Now.AddDays(1);
+    private static readonly BookingPolicy Policy = new();
 
     private static Member CreateMember() =>
         Member.Register(FullName.Create("Gert-Jan", "De Vries").ShouldSucceed(), Email.Create("gj@example.com").ShouldSucceed(), null, Now.AddDays(-1)).ShouldSucceed();
@@ -19,7 +20,7 @@ public class BookingTests
     private static TimeSlot Slot(DateTimeOffset start) => TimeSlot.Create(start, start.AddHours(1)).ShouldSucceed();
 
     private static Booking CreateBooking(Court? court = null, DateTimeOffset? start = null) =>
-        Booking.Create(CreateMember(), court ?? CreateCourt(), Slot(start ?? Tomorrow), Now).ShouldSucceed();
+        Booking.Create(CreateMember(), court ?? CreateCourt(), Slot(start ?? Tomorrow), Now, Policy, upcomingBookingsOfMember: 0).ShouldSucceed();
 
     [Test]
     public void Create_Should_CreateConfirmedBookingAndRaiseBookingCreated()
@@ -27,7 +28,7 @@ public class BookingTests
         var member = CreateMember();
         var court = CreateCourt();
 
-        var booking = Booking.Create(member, court, Slot(Tomorrow), Now).ShouldSucceed();
+        var booking = Booking.Create(member, court, Slot(Tomorrow), Now, Policy, upcomingBookingsOfMember: 0).ShouldSucceed();
 
         booking.Status.Should().Be(BookingStatus.Confirmed);
         booking.MemberId.Should().Be(member.Id);
@@ -43,7 +44,7 @@ public class BookingTests
         var member = CreateMember();
         member.Suspend();
 
-        Booking.Create(member, CreateCourt(), Slot(Tomorrow), Now).ShouldFail("suspended");
+        Booking.Create(member, CreateCourt(), Slot(Tomorrow), Now, Policy, upcomingBookingsOfMember: 0).ShouldFail("suspended");
     }
 
     [Test]
@@ -52,7 +53,7 @@ public class BookingTests
         var court = CreateCourt();
         court.SetMaintenance(true);
 
-        Booking.Create(CreateMember(), court, Slot(Tomorrow), Now).ShouldFail("not available");
+        Booking.Create(CreateMember(), court, Slot(Tomorrow), Now, Policy, upcomingBookingsOfMember: 0).ShouldFail("not available");
     }
 
     [Test]
@@ -61,7 +62,7 @@ public class BookingTests
         var court = CreateCourt();
         court.Retire();
 
-        Booking.Create(CreateMember(), court, Slot(Tomorrow), Now).ShouldFail().Is<BusinessRuleError>();
+        Booking.Create(CreateMember(), court, Slot(Tomorrow), Now, Policy, upcomingBookingsOfMember: 0).ShouldFail().Is<BusinessRuleError>();
     }
 
     [Test]
@@ -69,7 +70,7 @@ public class BookingTests
     [Arguments(-60)]
     public void Given_SlotThatDoesNotStartInTheFuture_Create_Should_Fail(int offsetMinutes)
     {
-        Booking.Create(CreateMember(), CreateCourt(), Slot(Now.AddMinutes(offsetMinutes)), Now).ShouldFail("future");
+        Booking.Create(CreateMember(), CreateCourt(), Slot(Now.AddMinutes(offsetMinutes)), Now, Policy, upcomingBookingsOfMember: 0).ShouldFail("future");
     }
 
     [Test]
@@ -78,7 +79,7 @@ public class BookingTests
         var booking = CreateBooking();
         booking.ClearDomainEvents();
 
-        booking.Cancel(" no time ");
+        booking.Cancel(" no time ", Now, TimeSpan.Zero);
 
         booking.Status.Should().Be(BookingStatus.Cancelled);
         booking.CancellationReason.Should().Be("no time");
@@ -90,9 +91,9 @@ public class BookingTests
     public void Given_CancelledBooking_Cancel_Should_Fail()
     {
         var booking = CreateBooking();
-        booking.Cancel();
+        booking.Cancel(null, Now, TimeSpan.Zero);
 
-        booking.Cancel().ShouldFail();
+        booking.Cancel(null, Now, TimeSpan.Zero).ShouldFail();
     }
 
     [Test]
@@ -101,7 +102,7 @@ public class BookingTests
         var booking = CreateBooking();
         booking.Complete(Tomorrow);
 
-        booking.Cancel().ShouldFail();
+        booking.Cancel(null, Now, TimeSpan.Zero).ShouldFail();
     }
 
     [Test]
@@ -149,7 +150,7 @@ public class BookingTests
     public void Given_CancelledBooking_MarkAsNoShow_Should_Fail()
     {
         var booking = CreateBooking();
-        booking.Cancel();
+        booking.Cancel(null, Now, TimeSpan.Zero);
 
         booking.MarkAsNoShow(Tomorrow).ShouldFail();
     }
@@ -162,7 +163,7 @@ public class BookingTests
         var overlapping = CreateBooking(court, Tomorrow.AddMinutes(30));
         var otherCourt = CreateBooking(start: Tomorrow.AddMinutes(30));
         var cancelled = CreateBooking(court, Tomorrow.AddMinutes(30));
-        cancelled.Cancel();
+        cancelled.Cancel(null, Now, TimeSpan.Zero);
 
         booking.Overlaps(overlapping).Should().BeTrue();
         booking.Overlaps(otherCourt).Should().BeFalse();

@@ -272,4 +272,45 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Test]
+    public async Task Given_RetryWithTheSameIdempotencyKey_CreateBooking_Should_ReturnTheSameBooking()
+    {
+        var member = await RegisterMemberAsync();
+        var court = await CreateCourtAsync();
+        var request = NewBooking(member.Id, court.Id, FutureSlot());
+        var key = Guid.NewGuid().ToString();
+
+        var first = await As(member).Bookings.Create(request, key);
+        var retry = await As(member).Bookings.Create(request, key);
+
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+        retry.StatusCode.Should().Be(HttpStatusCode.Created);
+        retry.Value().Id.Should().Be(first.Value().Id);
+    }
+
+    [Test]
+    public async Task Given_MemberBookedOnAnotherCourtAtTheSameTime_CreateBooking_Should_Return409()
+    {
+        var member = await RegisterMemberAsync();
+        var start = FutureSlot();
+        await BookAsync(member, await CreateCourtAsync(), start);
+
+        var response = await As(member).Bookings.Create(NewBooking(member.Id, (await CreateCourtAsync()).Id, start));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await response.ReadProblemAsync()).ErrorCode.Should().Be("Booking.MemberAlreadyBooked");
+    }
+
+    [Test]
+    public async Task Given_SlotOutsideOpeningHours_CreateBooking_Should_Return422()
+    {
+        var member = await RegisterMemberAsync();
+
+        // 03:00 UTC is 04:00 or 05:00 in Amsterdam: before the club opens.
+        var response = await As(member).Bookings.Create(NewBooking(member.Id, (await CreateCourtAsync()).Id, FutureSlot(hour: 3)));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.ReadProblemAsync()).ErrorCode.Should().Be("Booking.OutsideOpeningHours");
+    }
 }

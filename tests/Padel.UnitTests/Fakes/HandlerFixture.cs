@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Padel.Domain.Bookings;
 using Padel.Domain.Common;
@@ -25,6 +26,11 @@ public sealed class HandlerFixture
     public FakeTimeProvider Clock { get; } = new(Now);
     public FakeCurrentUser CurrentUser { get; set; } = FakeCurrentUser.Admin();
 
+    /// <summary>The default club rules (Amsterdam, 07:00-23:00, half hours, 3 upcoming bookings, 2 hours notice).</summary>
+    public BookingPolicy Policy { get; set; } = new();
+
+    public IOptions<BookingPolicy> PolicyOptions => Options.Create(Policy);
+
     public Member AddMember(string email = "gj@example.com", string firstName = "Gert-Jan", string lastName = "De Vries")
     {
         var member = Member.Register(FullName.Create(firstName, lastName).ShouldSucceed(), Email.Create(email).ShouldSucceed(), null, Now.AddDays(-30)).ShouldSucceed();
@@ -44,7 +50,7 @@ public sealed class HandlerFixture
     public Booking AddBooking(Member member, Court court, DateTimeOffset start, TimeSpan? duration = null)
     {
         var slot = TimeSlot.Create(start, start + (duration ?? TimeSpan.FromHours(1))).ShouldSucceed();
-        var booking = Booking.Create(member, court, slot, Now).ShouldSucceed();
+        var booking = Booking.Create(member, court, slot, Now, Policy, upcomingBookingsOfMember: 0).ShouldSucceed();
         booking.ClearDomainEvents();
         Bookings.Store.Add(booking);
         return booking;

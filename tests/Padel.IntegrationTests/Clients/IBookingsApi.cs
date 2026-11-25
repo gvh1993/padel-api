@@ -7,7 +7,7 @@ namespace Padel.IntegrationTests.Clients;
 public interface IBookingsApi
 {
     [Post("/api/bookings")]
-    Task<IApiResponse<CreateBookingResponse>> Create([Body] CreateBookingRequest request);
+    Task<IApiResponse<CreateBookingResponse>> Create([Body] CreateBookingRequest request, [Header("Idempotency-Key")] string? idempotencyKey = null);
 
     [Get("/api/bookings")]
     Task<IApiResponse<ListBookingsResponse>> List([Query] BookingListParameters? parameters = null);

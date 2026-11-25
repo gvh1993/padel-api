@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
 using Padel.Domain.Bookings;
@@ -10,7 +11,9 @@ public sealed record CancelBookingCommand(Guid Id, string? Reason = null) : IReq
 public sealed class CancelBookingCommandHandler(
     IBookingRepository bookings,
     IUnitOfWork unitOfWork,
-    ICurrentUser currentUser) : IRequestHandler<CancelBookingCommand, BookingDto>
+    ICurrentUser currentUser,
+    TimeProvider timeProvider,
+    IOptions<BookingPolicy> policy) : IRequestHandler<CancelBookingCommand, BookingDto>
 {
     public async Task<Result<BookingDto>> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
     {
@@ -25,7 +28,10 @@ public sealed class CancelBookingCommandHandler(
             return accessDenied;
         }
 
-        if (booking.Cancel(request.Reason) is Error cancelledError)
+        // Members must give notice; admins can cancel until the booking starts.
+        var requiredNotice = currentUser.IsAdmin ? TimeSpan.Zero : policy.Value.CancellationNotice;
+
+        if (booking.Cancel(request.Reason, timeProvider.GetUtcNow(), requiredNotice) is Error cancelledError)
         {
             return cancelledError;
         }

@@ -21,6 +21,32 @@ public static class BookingErrors
         "Booking.SlotTaken",
         "The court is already booked for the requested time slot.");
 
+    public static readonly Error MemberAlreadyBooked = Error.Conflict(
+        "Booking.MemberAlreadyBooked",
+        "The member already has a booking at this time.");
+
+    public static readonly Error AlreadyStarted = Error.BusinessRule(
+        "Booking.AlreadyStarted",
+        "A booking cannot be cancelled after it has started.");
+
+    public static readonly Error IdempotencyKeyReused = Error.Conflict(
+        "Booking.IdempotencyKeyReused",
+        "This idempotency key was already used for a different booking.");
+
+    public static Error OutsideOpeningHours(TimeOnly opensAt, TimeOnly closesAt, string timeZone) =>
+        Error.BusinessRule(
+            "Booking.OutsideOpeningHours",
+            $"Bookings must be between {opensAt:HH:mm} and {closesAt:HH:mm} ({timeZone}) on the same day.");
+
+    public static Error NotOnSlotBoundary(int slotMinutes) =>
+        Error.BusinessRule("Booking.NotOnSlotBoundary", $"Bookings must start and end on a multiple of {slotMinutes} minutes.");
+
+    public static Error TooManyUpcomingBookings(int maximum) =>
+        Error.BusinessRule("Booking.TooManyUpcomingBookings", $"A member can have at most {maximum} upcoming bookings.");
+
+    public static Error CancellationTooLate(TimeSpan notice) =>
+        Error.BusinessRule("Booking.CancellationTooLate", $"Members can cancel up to {notice.TotalHours:0.#} hours before the start.");
+
     public static Error CourtNotAvailable(string courtName, CourtStatus status) =>
         Error.BusinessRule("Booking.CourtNotAvailable", $"Court '{courtName}' is not available for booking ({status}).");
 

@@ -6,6 +6,7 @@ using Padel.Api.ErrorHandling;
 using Padel.Api.Http;
 using Padel.Api.OpenApi;
 using Padel.Application;
+using Padel.Domain.Bookings;
 using Padel.Infrastructure;
 using Scalar.AspNetCore;
 
@@ -15,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddApplication();
+builder.Services.AddOptions<BookingPolicy>().BindConfiguration("Club:Bookings");
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.ConfigureHttpJsonOptions(options =>

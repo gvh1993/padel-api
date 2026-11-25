@@ -6,13 +6,14 @@ namespace Padel.Domain.Bookings;
 
 public class Booking : EntityWithDomainEvents
 {
-    private Booking(Guid memberId, Guid courtId, TimeSlot slot, DateTimeOffset createdOn)
+    private Booking(Guid memberId, Guid courtId, TimeSlot slot, DateTimeOffset createdOn, string? idempotencyKey)
     {
         MemberId = memberId;
         CourtId = courtId;
         Slot = slot;
         Status = BookingStatus.Confirmed;
         CreatedOn = createdOn;
+        IdempotencyKey = idempotencyKey;
 
         AddDomainEvent(new BookingCreated(Id, MemberId, CourtId));
     }
@@ -28,7 +29,24 @@ public class Booking : EntityWithDomainEvents
     public string? CancellationReason { get; private set; }
     public DateTimeOffset CreatedOn { get; private set; }
 
-    public static Result<Booking> Create(Member member, Court court, TimeSlot slot, DateTimeOffset now)
+    /// <summary>The client's key for this booking request, so a retried request does not book twice.</summary>
+    public string? IdempotencyKey { get; private set; }
+
+    /// <param name="member">Who books.</param>
+    /// <param name="court">The court to book.</param>
+    /// <param name="slot">When.</param>
+    /// <param name="now">The current time.</param>
+    /// <param name="policy">The club's booking rules.</param>
+    /// <param name="upcomingBookingsOfMember">How many bookings the member has that have not started yet.</param>
+    /// <param name="idempotencyKey">Optional key of the client request.</param>
+    public static Result<Booking> Create(
+        Member member,
+        Court court,
+        TimeSlot slot,
+        DateTimeOffset now,
+        BookingPolicy policy,
+        int upcomingBookingsOfMember,
+        string? idempotencyKey = null)
     {
         if (!member.CanBook)
         {
@@ -45,10 +63,21 @@ public class Booking : EntityWithDomainEvents
             return BookingErrors.NotInFuture;
         }
 
-        return new Booking(member.Id, court.Id, slot, now);
+        if (policy.Allows(slot) is Error outsideRules)
+        {
+            return outsideRules;
+        }
+
+        if (upcomingBookingsOfMember >= policy.MaxUpcomingBookingsPerMember)
+        {
+            return BookingErrors.TooManyUpcomingBookings(policy.MaxUpcomingBookingsPerMember);
+        }
+
+        return new Booking(member.Id, court.Id, slot, now, idempotencyKey);
     }
 
-    public Result Cancel(string? reason = null)
+    /// <summary>Cancels the booking, at least <paramref name="requiredNotice"/> before it starts.</summary>
+    public Result Cancel(string? reason, DateTimeOffset now, TimeSpan requiredNotice)
     {
         if (Status == BookingStatus.Cancelled)
         {
@@ -58,6 +87,16 @@ public class Booking : EntityWithDomainEvents
         if (Status is BookingStatus.Completed or BookingStatus.NoShow)
         {
             return BookingErrors.CannotCancel(Status);
+        }
+
+        if (now >= Slot.Start)
+        {
+            return BookingErrors.AlreadyStarted;
+        }
+
+        if (Slot.Start - now < requiredNotice)
+        {
+            return BookingErrors.CancellationTooLate(requiredNotice);
         }
 
         var cancellationReason = Reason.Create(reason);
@@ -95,6 +134,9 @@ public class Booking : EntityWithDomainEvents
         AddDomainEvent(new BookingNoShow(Id));
         return Success.Instance;
     }
+
+    /// <summary>True when this booking was made for the same court and slot (an idempotent retry).</summary>
+    public bool IsFor(Guid courtId, TimeSlot slot) => CourtId == courtId && Slot == slot;
 
     public bool Overlaps(Booking other)
     {

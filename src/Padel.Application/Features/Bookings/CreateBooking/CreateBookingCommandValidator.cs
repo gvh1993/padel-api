@@ -10,6 +10,7 @@ public sealed class CreateBookingCommandValidator : AbstractValidator<CreateBook
         RuleFor(x => x.MemberId).NotEmpty();
         RuleFor(x => x.CourtId).NotEmpty();
         RuleFor(x => x.Start).NotEmpty();
+        RuleFor(x => x.IdempotencyKey).MaximumLength(100);
         RuleFor(x => x.End).Custom((end, context) =>
         {
             if (TimeSlot.Create(context.InstanceToValidate.Start, end) is Error error)

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
 using Padel.Application.Features.Courts;
@@ -15,6 +16,9 @@ public sealed record CreateBookingCommand : IRequest<BookingDto>
     public required Guid CourtId { get; init; }
     public required DateTimeOffset Start { get; init; }
     public required DateTimeOffset End { get; init; }
+
+    /// <summary>Optional client key (the <c>Idempotency-Key</c> header): retrying with the same key returns the same booking.</summary>
+    public string? IdempotencyKey { get; init; }
 }
 
 public sealed class CreateBookingCommandHandler(
@@ -23,7 +27,8 @@ public sealed class CreateBookingCommandHandler(
     ICourtRepository courts,
     IUnitOfWork unitOfWork,
     ICurrentUser currentUser,
-    TimeProvider timeProvider) : IRequestHandler<CreateBookingCommand, BookingDto>
+    TimeProvider timeProvider,
+    IOptions<BookingPolicy> policy) : IRequestHandler<CreateBookingCommand, BookingDto>
 {
     public async Task<Result<BookingDto>> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
     {
@@ -50,16 +55,31 @@ public sealed class CreateBookingCommandHandler(
             return slotResult.Error;
         }
 
-        var bookingResult = Booking.Create(member, court, slot, timeProvider.GetUtcNow());
+        if (request.IdempotencyKey is { } key
+            && await bookings.FindByIdempotencyKeyAsync(member.Id, key, cancellationToken) is { } earlier)
+        {
+            // A retry of a request that already succeeded: return the same booking, unless the key was reused.
+            return earlier.IsFor(court.Id, slot) ? earlier.ToDto() : BookingErrors.IdempotencyKeyReused;
+        }
+
+        var now = timeProvider.GetUtcNow();
+        var upcoming = await bookings.CountUpcomingAsync(member.Id, now, cancellationToken);
+
+        var bookingResult = Booking.Create(member, court, slot, now, policy.Value, upcoming, request.IdempotencyKey);
         if (bookingResult is not Booking booking)
         {
             return bookingResult.Error;
         }
 
-        // Fast path for a friendly error; the database exclusion constraint guards against races.
+        // Fast paths for friendly errors; the database exclusion constraints guard against races.
         if (await bookings.HasOverlapAsync(court.Id, slot, cancellationToken))
         {
             return BookingErrors.SlotTaken;
+        }
+
+        if (await bookings.MemberHasOverlapAsync(member.Id, slot, cancellationToken))
+        {
+            return BookingErrors.MemberAlreadyBooked;
         }
 
         bookings.Add(booking);

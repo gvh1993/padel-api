@@ -21,4 +21,29 @@ public sealed class BookingRepository(PadelDbContext context)
                 && start < booking.Slot.End,
             cancellationToken);
     }
+
+    public Task<bool> MemberHasOverlapAsync(Guid memberId, TimeSlot slot, CancellationToken cancellationToken = default)
+    {
+        var start = slot.Start;
+        var end = slot.End;
+
+        return Set.AnyAsync(
+            booking => booking.MemberId == memberId
+                && booking.Status != BookingStatus.Cancelled
+                && booking.Slot.Start < end
+                && start < booking.Slot.End,
+            cancellationToken);
+    }
+
+    public Task<int> CountUpcomingAsync(Guid memberId, DateTimeOffset now, CancellationToken cancellationToken = default) =>
+        Set.CountAsync(
+            booking => booking.MemberId == memberId
+                && booking.Status == BookingStatus.Confirmed
+                && booking.Slot.Start > now,
+            cancellationToken);
+
+    public Task<Booking?> FindByIdempotencyKeyAsync(Guid memberId, string idempotencyKey, CancellationToken cancellationToken = default) =>
+        Set.FirstOrDefaultAsync(
+            booking => booking.MemberId == memberId && booking.IdempotencyKey == idempotencyKey,
+            cancellationToken);
 }
