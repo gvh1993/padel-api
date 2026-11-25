@@ -147,12 +147,25 @@ Violations of these constraints return **409 Conflict**.
   | 403 | Not allowed |
   | 404 | Not found |
   | 409 | Conflict |
+  | 412 | The resource changed since it was read (`If-Match`) |
   | 422 | A business rule was violated |
+  | 429 | Too many requests |
 
 - **Authorization:**
   - Admins (realm role `admin`) manage members and courts.
   - Members (accounts linked to a member) can only see and change their own profile and bookings.
   - Every authenticated user can view courts and court schedules.
+
+## Rate limiting
+
+Each caller has request limits per minute: the account (`sub`) when signed in, otherwise the IP address.
+
+| Limit | Default | Setting |
+| --- | --- | --- |
+| All of `/api` | 120 requests | `RateLimiting:PermitsPerMinute` |
+| `POST /api/bookings` | 10 new bookings | `RateLimiting:BookingPermitsPerMinute` |
+
+A caller over the limit gets a **429** problem with a `Retry-After` header. Health checks and the documentation are not limited.
 
 ## Health checks
 

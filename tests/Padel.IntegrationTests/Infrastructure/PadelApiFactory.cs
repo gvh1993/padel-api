@@ -69,6 +69,10 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
         builder.UseSetting("OpenApi:Enabled", "true");
         builder.UseSetting("Outbox:PollingInterval", "00:00:00.100");
 
+        // Tests send many requests per account; RateLimitingTests uses its own, low limits.
+        builder.UseSetting("RateLimiting:PermitsPerMinute", "100000");
+        builder.UseSetting("RateLimiting:BookingPermitsPerMinute", "100000");
+
         builder.ConfigureTestServices(services => services.AddSingleton<INotificationSender>(Notifications));
     }
 

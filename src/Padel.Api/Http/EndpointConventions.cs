@@ -11,7 +11,8 @@ internal static class EndpointConventions
 
         group.WithMetadata(
             new ProducesResponseTypeMetadata(StatusCodes.Status401Unauthorized, typeof(ProblemDetails), ["application/problem+json"]),
-            new ProducesResponseTypeMetadata(StatusCodes.Status403Forbidden, typeof(ProblemDetails), ["application/problem+json"]));
+            new ProducesResponseTypeMetadata(StatusCodes.Status403Forbidden, typeof(ProblemDetails), ["application/problem+json"]),
+            new ProducesResponseTypeMetadata(StatusCodes.Status429TooManyRequests, typeof(ProblemDetails), ["application/problem+json"]));
 
         return group;
     }

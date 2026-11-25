@@ -11,6 +11,7 @@ internal sealed class CreateBookingEndpoint : IEndpoint
     public void MapEndpoint(IEndpointRouteBuilder routes) =>
         routes.MapBookingsGroup()
             .MapPost("/", HandleAsync)
+            .RequireRateLimiting(RateLimiting.CreateBookingPolicy)
             .WithName("CreateBooking")
             .WithSummary("Books a court.")
             .WithDescription(

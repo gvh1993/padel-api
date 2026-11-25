@@ -31,6 +31,7 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
 builder.Services.AddPadelAuthentication();
+builder.Services.AddPadelRateLimiting();
 
 builder.Services.AddOpenApi(options => options.AddDocumentTransformer<PadelDocumentTransformer>());
 
@@ -41,6 +42,7 @@ app.UseStatusCodePages();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapDefaultEndpoints();
 
