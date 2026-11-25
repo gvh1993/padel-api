@@ -13,6 +13,9 @@ public static class ApplicationErrors
         "Concurrency.Conflict",
         "The resource was changed by another request. Reload it and try again.");
 
+    public static Error Stale<T>(Guid id) =>
+        Error.PreconditionFailed($"{typeof(T).Name}.Stale", $"{typeof(T).Name} '{id}' was changed since you read it. Reload it and try again.");
+
     public static Error NotFound<T>(Guid id) =>
         Error.NotFound($"{typeof(T).Name}.NotFound", $"{typeof(T).Name} '{id}' was not found.");
 }

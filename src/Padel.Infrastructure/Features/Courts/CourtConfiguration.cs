@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Padel.Domain.Courts;
-using Padel.Infrastructure.Persistence;
 
 namespace Padel.Infrastructure.Features.Courts;
 
@@ -17,7 +16,8 @@ internal sealed class CourtConfiguration : IEntityTypeConfiguration<Court>
         builder.Property(court => court.Surface).HasMaxLength(Court.MaxLength);
         builder.Property(court => court.Status).HasConversion<string>().HasMaxLength(20);
 
-        builder.Property<uint>(DatabaseConstraints.RowVersionColumn).IsRowVersion();
+        // PostgreSQL's xmin system column: changes on every update, checked on every save.
+        builder.Property(court => court.Version).HasColumnName("xmin").IsRowVersion();
 
         builder.Ignore(court => court.DomainEvents);
     }

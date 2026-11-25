@@ -5,7 +5,7 @@ using Padel.Domain.Common;
 
 namespace Padel.Application.Features.Bookings;
 
-public sealed record MarkBookingNoShowCommand(Guid Id) : IRequest<BookingDto>;
+public sealed record MarkBookingNoShowCommand(Guid Id, uint? ExpectedVersion = null) : IRequest<BookingDto>;
 
 public sealed class MarkBookingNoShowCommandHandler(
     IBookingRepository bookings,
@@ -18,6 +18,11 @@ public sealed class MarkBookingNoShowCommandHandler(
         if (booking is null)
         {
             return ApplicationErrors.NotFound<Booking>(request.Id);
+        }
+
+        if (booking.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         if (booking.MarkAsNoShow(timeProvider.GetUtcNow()) is Error changedError)

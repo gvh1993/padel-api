@@ -23,6 +23,7 @@ internal sealed class CreateBookingEndpoint : IEndpoint
 
     private static async Task<Results<CreatedAtRoute<CreateBookingResponse>, ProblemHttpResult>> HandleAsync(
         CreateBookingRequest request,
+        HttpResponse response,
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
@@ -37,6 +38,6 @@ internal sealed class CreateBookingEndpoint : IEndpoint
         };
 
         var result = await dispatcher.Send<CreateBookingCommand, BookingDto>(command, cancellationToken);
-        return result.ToHttpResult(booking => TypedResults.CreatedAtRoute(CreateBookingResponse.From(booking), GetBookingEndpoint.Name, new { id = booking.Id }));
+        return result.ToHttpResult(booking => response.WithETag(booking.Version, TypedResults.CreatedAtRoute(CreateBookingResponse.From(booking), GetBookingEndpoint.Name, new { id = booking.Id })));
     }
 }

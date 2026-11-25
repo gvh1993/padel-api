@@ -4,7 +4,7 @@ namespace Padel.Domain.Common;
 /// Why an operation failed: exactly one of the error kinds. Switch on it to handle each kind;
 /// the compiler checks that every kind is handled.
 /// </summary>
-public union Error(ValidationError, NotFoundError, ConflictError, ForbiddenError, BusinessRuleError)
+public union Error(ValidationError, NotFoundError, ConflictError, ForbiddenError, BusinessRuleError, PreconditionFailedError)
 {
     /// <summary>The stable code of the error, e.g. <c>Booking.SlotTaken</c>.</summary>
     public string Code => Details.Code;
@@ -25,4 +25,6 @@ public union Error(ValidationError, NotFoundError, ConflictError, ForbiddenError
     public static Error Forbidden(string code, string description) => new ForbiddenError(code, description);
 
     public static Error BusinessRule(string code, string description) => new BusinessRuleError(code, description);
+
+    public static Error PreconditionFailed(string code, string description) => new PreconditionFailedError(code, description);
 }

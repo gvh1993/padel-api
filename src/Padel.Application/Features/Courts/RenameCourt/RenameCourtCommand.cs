@@ -5,7 +5,7 @@ using Padel.Domain.Courts;
 
 namespace Padel.Application.Features.Courts;
 
-public sealed record RenameCourtCommand(Guid Id, string Name) : IRequest<CourtDto>;
+public sealed record RenameCourtCommand(Guid Id, string Name, uint? ExpectedVersion = null) : IRequest<CourtDto>;
 
 public sealed class RenameCourtCommandHandler(
     ICourtRepository courts,
@@ -17,6 +17,11 @@ public sealed class RenameCourtCommandHandler(
         if (court is null)
         {
             return ApplicationErrors.NotFound<Court>(request.Id);
+        }
+
+        if (court.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         if (court.Rename(request.Name) is Error renamedError)

@@ -5,7 +5,7 @@ using Padel.Domain.Members;
 
 namespace Padel.Application.Features.Members;
 
-public sealed record SuspendMemberCommand(Guid Id, string? Reason) : IRequest<MemberDto>;
+public sealed record SuspendMemberCommand(Guid Id, string? Reason, uint? ExpectedVersion = null) : IRequest<MemberDto>;
 
 public sealed class SuspendMemberCommandHandler(
     IMemberRepository members,
@@ -17,6 +17,11 @@ public sealed class SuspendMemberCommandHandler(
         if (member is null)
         {
             return ApplicationErrors.NotFound<Member>(request.Id);
+        }
+
+        if (member.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         if (member.Suspend(request.Reason) is Error suspendedError)

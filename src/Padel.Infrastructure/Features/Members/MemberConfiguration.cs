@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Padel.Domain.Common;
 using Padel.Domain.Members;
-using Padel.Infrastructure.Persistence;
 
 namespace Padel.Infrastructure.Features.Members;
 
@@ -29,7 +28,8 @@ internal sealed class MemberConfiguration : IEntityTypeConfiguration<Member>
         builder.Property(member => member.RegisteredOn);
 
         // Maps to PostgreSQL's xmin system column: optimistic concurrency without an extra column.
-        builder.Property<uint>(DatabaseConstraints.RowVersionColumn).IsRowVersion();
+        // PostgreSQL's xmin system column: changes on every update, checked on every save.
+        builder.Property(member => member.Version).HasColumnName("xmin").IsRowVersion();
 
         builder.Ignore(member => member.DomainEvents);
     }

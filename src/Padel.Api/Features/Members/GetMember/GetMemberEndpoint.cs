@@ -17,7 +17,7 @@ internal sealed class GetMemberEndpoint : IEndpoint
             .WithDescription("Admins, or the member itself.")
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Results<Ok<GetMemberResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+    private static async Task<Results<Ok<GetMemberResponse>, ProblemHttpResult>> HandleAsync(Guid id, HttpResponse response, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
         (await dispatcher.Send<GetMemberQuery, MemberDto>(new GetMemberQuery(id), cancellationToken))
-            .ToHttpResult(member => TypedResults.Ok(GetMemberResponse.From(member)));
+            .ToHttpResult(member => response.WithETag(member.Version, TypedResults.Ok(GetMemberResponse.From(member))));
 }

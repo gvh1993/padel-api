@@ -5,6 +5,9 @@ namespace Padel.Application.Features.Members;
 public sealed record MemberDto
 {
     public Guid Id { get; init; }
+
+    /// <summary>The row version; the API returns it as the <c>ETag</c>.</summary>
+    public uint Version { get; init; }
     public string FirstName { get; init; } = string.Empty;
     public string LastName { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;

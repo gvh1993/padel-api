@@ -4,6 +4,12 @@ public abstract class Entity
 {
     public Guid Id { get; protected set; }
 
+    /// <summary>
+    /// Changes on every save (the database row version). Clients send it back (HTTP <c>If-Match</c>)
+    /// to make sure they change the version they have seen.
+    /// </summary>
+    public uint Version { get; private set; }
+
     protected Entity(Guid id)
     {
         Id = id;

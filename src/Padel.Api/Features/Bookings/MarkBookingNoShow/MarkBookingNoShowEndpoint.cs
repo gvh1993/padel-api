@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Padel.Api.Authentication;
 using Padel.Api.Http;
 using Padel.Application.Common.Messaging;
@@ -15,9 +16,11 @@ internal sealed class MarkBookingNoShowEndpoint : IEndpoint
             .WithName("MarkBookingNoShow")
             .WithSummary("Marks a booking as a no-show.")
             .WithDescription("Admin only. Only after the slot has started.")
-            .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
+            .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity, StatusCodes.Status412PreconditionFailed);
 
-    private static async Task<Results<Ok<MarkBookingNoShowResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        (await dispatcher.Send<MarkBookingNoShowCommand, BookingDto>(new MarkBookingNoShowCommand(id), cancellationToken))
-            .ToHttpResult(booking => TypedResults.Ok(MarkBookingNoShowResponse.From(booking)));
+    private static async Task<Results<Ok<MarkBookingNoShowResponse>, ProblemHttpResult>> HandleAsync(Guid id,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        HttpResponse response, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<MarkBookingNoShowCommand, BookingDto>(new MarkBookingNoShowCommand(id, ETags.ParseIfMatch(ifMatch)), cancellationToken))
+            .ToHttpResult(booking => response.WithETag(booking.Version, TypedResults.Ok(MarkBookingNoShowResponse.From(booking))));
 }

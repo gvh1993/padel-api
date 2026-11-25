@@ -6,7 +6,7 @@ using Padel.Domain.Common;
 
 namespace Padel.Application.Features.Bookings;
 
-public sealed record CancelBookingCommand(Guid Id, string? Reason = null) : IRequest<BookingDto>;
+public sealed record CancelBookingCommand(Guid Id, string? Reason = null, uint? ExpectedVersion = null) : IRequest<BookingDto>;
 
 public sealed class CancelBookingCommandHandler(
     IBookingRepository bookings,
@@ -21,6 +21,11 @@ public sealed class CancelBookingCommandHandler(
         if (booking is null)
         {
             return ApplicationErrors.NotFound<Booking>(request.Id);
+        }
+
+        if (booking.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         if (currentUser.CanAccessMember(booking.MemberId) is Error accessDenied)

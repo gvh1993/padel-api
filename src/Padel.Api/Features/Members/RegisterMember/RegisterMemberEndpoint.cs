@@ -20,6 +20,7 @@ internal sealed class RegisterMemberEndpoint : IEndpoint
 
     private static async Task<Results<CreatedAtRoute<RegisterMemberResponse>, ProblemHttpResult>> HandleAsync(
         RegisterMemberRequest request,
+        HttpResponse response,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
     {
@@ -32,6 +33,6 @@ internal sealed class RegisterMemberEndpoint : IEndpoint
         };
 
         var result = await dispatcher.Send<RegisterMemberCommand, MemberDto>(command, cancellationToken);
-        return result.ToHttpResult(member => TypedResults.CreatedAtRoute(RegisterMemberResponse.From(member), GetMemberEndpoint.Name, new { id = member.Id }));
+        return result.ToHttpResult(member => response.WithETag(member.Version, TypedResults.CreatedAtRoute(RegisterMemberResponse.From(member), GetMemberEndpoint.Name, new { id = member.Id })));
     }
 }

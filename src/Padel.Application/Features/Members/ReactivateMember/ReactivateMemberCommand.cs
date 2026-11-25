@@ -5,7 +5,7 @@ using Padel.Domain.Members;
 
 namespace Padel.Application.Features.Members;
 
-public sealed record ReactivateMemberCommand(Guid Id) : IRequest<MemberDto>;
+public sealed record ReactivateMemberCommand(Guid Id, uint? ExpectedVersion = null) : IRequest<MemberDto>;
 
 public sealed class ReactivateMemberCommandHandler(
     IMemberRepository members,
@@ -17,6 +17,11 @@ public sealed class ReactivateMemberCommandHandler(
         if (member is null)
         {
             return ApplicationErrors.NotFound<Member>(request.Id);
+        }
+
+        if (member.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         member.Reactivate();

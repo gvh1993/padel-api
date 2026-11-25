@@ -17,7 +17,7 @@ public interface ICourtsApi
     Task<IApiResponse<GetCourtResponse>> Get(Guid id);
 
     [Put("/api/courts/{id}/name")]
-    Task<IApiResponse<RenameCourtResponse>> Rename(Guid id, [Body] RenameCourtRequest request);
+    Task<IApiResponse<RenameCourtResponse>> Rename(Guid id, [Body] RenameCourtRequest request, [Header("If-Match")] string? ifMatch = null);
 
     [Put("/api/courts/{id}/maintenance")]
     Task<IApiResponse<SetCourtMaintenanceResponse>> SetMaintenance(Guid id, [Body] SetCourtMaintenanceRequest request);

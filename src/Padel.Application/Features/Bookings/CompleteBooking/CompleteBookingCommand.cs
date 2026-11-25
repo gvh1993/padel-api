@@ -5,7 +5,7 @@ using Padel.Domain.Common;
 
 namespace Padel.Application.Features.Bookings;
 
-public sealed record CompleteBookingCommand(Guid Id) : IRequest<BookingDto>;
+public sealed record CompleteBookingCommand(Guid Id, uint? ExpectedVersion = null) : IRequest<BookingDto>;
 
 public sealed class CompleteBookingCommandHandler(
     IBookingRepository bookings,
@@ -18,6 +18,11 @@ public sealed class CompleteBookingCommandHandler(
         if (booking is null)
         {
             return ApplicationErrors.NotFound<Booking>(request.Id);
+        }
+
+        if (booking.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         if (booking.Complete(timeProvider.GetUtcNow()) is Error changedError)

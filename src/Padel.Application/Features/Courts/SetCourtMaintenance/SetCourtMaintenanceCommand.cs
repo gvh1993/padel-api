@@ -5,7 +5,7 @@ using Padel.Domain.Courts;
 
 namespace Padel.Application.Features.Courts;
 
-public sealed record SetCourtMaintenanceCommand(Guid Id, bool UnderMaintenance) : IRequest<CourtDto>;
+public sealed record SetCourtMaintenanceCommand(Guid Id, bool UnderMaintenance, uint? ExpectedVersion = null) : IRequest<CourtDto>;
 
 public sealed class SetCourtMaintenanceCommandHandler(
     ICourtRepository courts,
@@ -17,6 +17,11 @@ public sealed class SetCourtMaintenanceCommandHandler(
         if (court is null)
         {
             return ApplicationErrors.NotFound<Court>(request.Id);
+        }
+
+        if (court.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         if (court.SetMaintenance(request.UnderMaintenance) is Error changedError)

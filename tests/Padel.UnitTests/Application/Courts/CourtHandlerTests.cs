@@ -48,6 +48,31 @@ public class CourtHandlerTests
     }
 
     [Test]
+    public async Task Given_StaleVersion_RenameCourt_Should_FailWithPreconditionFailed()
+    {
+        var court = _fixture.AddCourt();
+        var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
+
+        var error = await handler.Handle(new RenameCourtCommand(court.Id, "Centre Court", ExpectedVersion: court.Version + 1), CancellationToken.None)
+            .ShouldFail().Is<PreconditionFailedError>();
+
+        error.Code.Should().Be("Court.Stale");
+        court.Name.Should().Be("Court A");
+        _fixture.UnitOfWork.SaveCount.Should().Be(0);
+    }
+
+    [Test]
+    public async Task Given_CurrentVersion_RenameCourt_Should_ChangeTheName()
+    {
+        var court = _fixture.AddCourt();
+        var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
+
+        var result = await handler.Handle(new RenameCourtCommand(court.Id, "Centre Court", ExpectedVersion: court.Version), CancellationToken.None).ShouldSucceed();
+
+        result.Name.Should().Be("Centre Court");
+    }
+
+    [Test]
     public async Task SetCourtMaintenance_Should_PutCourtInMaintenance()
     {
         var court = _fixture.AddCourt();

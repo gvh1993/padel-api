@@ -5,7 +5,7 @@ using Padel.Domain.Courts;
 
 namespace Padel.Application.Features.Courts;
 
-public sealed record RetireCourtCommand(Guid Id) : IRequest<CourtDto>;
+public sealed record RetireCourtCommand(Guid Id, uint? ExpectedVersion = null) : IRequest<CourtDto>;
 
 public sealed class RetireCourtCommandHandler(
     ICourtRepository courts,
@@ -17,6 +17,11 @@ public sealed class RetireCourtCommandHandler(
         if (court is null)
         {
             return ApplicationErrors.NotFound<Court>(request.Id);
+        }
+
+        if (court.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         court.Retire();

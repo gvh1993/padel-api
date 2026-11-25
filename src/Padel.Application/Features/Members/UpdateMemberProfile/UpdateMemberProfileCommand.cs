@@ -12,6 +12,9 @@ public sealed record UpdateMemberProfileCommand : IRequest<MemberDto>
     public required string LastName { get; init; }
     public required string Email { get; init; }
     public string? Phone { get; init; }
+
+    /// <summary>The version the client changes (HTTP <c>If-Match</c>); <c>null</c> skips the check.</summary>
+    public uint? ExpectedVersion { get; init; }
 }
 
 public sealed class UpdateMemberProfileCommandHandler(
@@ -30,6 +33,11 @@ public sealed class UpdateMemberProfileCommandHandler(
         if (member is null)
         {
             return ApplicationErrors.NotFound<Member>(request.Id);
+        }
+
+        if (member.MatchesVersion(request.ExpectedVersion) is Error stale)
+        {
+            return stale;
         }
 
         var emailResult = Email.Create(request.Email);

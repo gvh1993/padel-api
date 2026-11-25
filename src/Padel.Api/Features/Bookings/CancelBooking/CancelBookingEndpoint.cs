@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Padel.Api.Http;
 using Padel.Application.Common.Messaging;
 using Padel.Application.Features.Bookings;
@@ -14,13 +15,15 @@ internal sealed class CancelBookingEndpoint : IEndpoint
             .WithSummary("Cancels a booking.")
             .WithDescription("Admins (until the booking starts), or the member who made the booking (up to the cancellation notice before the start).")
             .ProducesValidationProblems()
-            .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
+            .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity, StatusCodes.Status412PreconditionFailed);
 
     private static async Task<Results<Ok<CancelBookingResponse>, ProblemHttpResult>> HandleAsync(
         Guid id,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        HttpResponse response,
         CancelBookingRequest? request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken) =>
-        (await dispatcher.Send<CancelBookingCommand, BookingDto>(new CancelBookingCommand(id, request?.Reason), cancellationToken))
-            .ToHttpResult(booking => TypedResults.Ok(CancelBookingResponse.From(booking)));
+        (await dispatcher.Send<CancelBookingCommand, BookingDto>(new CancelBookingCommand(id, request?.Reason, ETags.ParseIfMatch(ifMatch)), cancellationToken))
+            .ToHttpResult(booking => response.WithETag(booking.Version, TypedResults.Ok(CancelBookingResponse.From(booking))));
 }

@@ -36,7 +36,8 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasOne<Member>().WithMany().HasForeignKey(booking => booking.MemberId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Court>().WithMany().HasForeignKey(booking => booking.CourtId).OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property<uint>(DatabaseConstraints.RowVersionColumn).IsRowVersion();
+        // PostgreSQL's xmin system column: changes on every update, checked on every save.
+        builder.Property(booking => booking.Version).HasColumnName("xmin").IsRowVersion();
 
         builder.Ignore(booking => booking.DomainEvents);
 

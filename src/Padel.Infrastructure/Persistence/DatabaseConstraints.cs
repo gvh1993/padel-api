@@ -13,8 +13,6 @@ internal static class DatabaseConstraints
     public const string BookingNoMemberOverlap = "EX_Bookings_NoOverlappingMemberSlots";
     public const string BookingIdempotencyKeyUnique = "IX_Bookings_MemberId_IdempotencyKey";
 
-    public const string RowVersionColumn = "Version";
-
     public static Error ErrorFor(string? constraintName) => constraintName switch
     {
         MemberEmailUnique => Error.Conflict("Member.EmailInUse", "A member with this email already exists."),

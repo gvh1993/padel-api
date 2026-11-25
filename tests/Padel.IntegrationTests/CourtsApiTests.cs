@@ -91,4 +91,43 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
+
+    [Test]
+    public async Task GetCourt_Should_ReturnAnETagThatChangesOnUpdate()
+    {
+        var court = await CreateCourtAsync();
+
+        var before = await Admin.Courts.Get(court.Id);
+        var renamed = await Admin.Courts.Rename(court.Id, new RenameCourtRequest { Name = UniqueName("Renamed") }, before.Headers!.ETag!.ToString());
+
+        before.Headers.ETag.Should().NotBeNull();
+        renamed.StatusCode.Should().Be(HttpStatusCode.OK);
+        renamed.Headers!.ETag!.ToString().Should().NotBe(before.Headers.ETag.ToString());
+    }
+
+    [Test]
+    public async Task Given_StaleETag_RenameCourt_Should_Return412AndKeepTheNewerChange()
+    {
+        var court = await CreateCourtAsync();
+        var staleETag = (await Admin.Courts.Get(court.Id)).Headers!.ETag!.ToString();
+        var firstName = UniqueName("First");
+        await Admin.Courts.Rename(court.Id, new RenameCourtRequest { Name = firstName }, staleETag);
+
+        // A second client still has the old version.
+        var response = await Admin.Courts.Rename(court.Id, new RenameCourtRequest { Name = UniqueName("Second") }, staleETag);
+
+        response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        (await response.ReadProblemAsync()).ErrorCode.Should().Be("Court.Stale");
+        (await Admin.Courts.Get(court.Id)).Value().Name.Should().Be(firstName);
+    }
+
+    [Test]
+    public async Task Given_NoIfMatch_RenameCourt_Should_ApplyTheChange()
+    {
+        var court = await CreateCourtAsync();
+
+        var response = await Admin.Courts.Rename(court.Id, new RenameCourtRequest { Name = UniqueName("Unconditional") });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
 }

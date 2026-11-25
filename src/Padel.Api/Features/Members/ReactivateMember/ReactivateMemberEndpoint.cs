@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Padel.Api.Authentication;
 using Padel.Api.Http;
 using Padel.Application.Common.Messaging;
@@ -15,9 +16,11 @@ internal sealed class ReactivateMemberEndpoint : IEndpoint
             .WithName("ReactivateMember")
             .WithSummary("Reactivates a suspended member.")
             .WithDescription("Admin only.")
-            .ProducesProblems(StatusCodes.Status404NotFound);
+            .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status412PreconditionFailed);
 
-    private static async Task<Results<Ok<ReactivateMemberResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        (await dispatcher.Send<ReactivateMemberCommand, MemberDto>(new ReactivateMemberCommand(id), cancellationToken))
-            .ToHttpResult(member => TypedResults.Ok(ReactivateMemberResponse.From(member)));
+    private static async Task<Results<Ok<ReactivateMemberResponse>, ProblemHttpResult>> HandleAsync(Guid id,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        HttpResponse response, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<ReactivateMemberCommand, MemberDto>(new ReactivateMemberCommand(id, ETags.ParseIfMatch(ifMatch)), cancellationToken))
+            .ToHttpResult(member => response.WithETag(member.Version, TypedResults.Ok(ReactivateMemberResponse.From(member))));
 }

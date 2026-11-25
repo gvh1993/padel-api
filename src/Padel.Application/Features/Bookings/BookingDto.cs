@@ -5,6 +5,9 @@ namespace Padel.Application.Features.Bookings;
 public sealed record BookingDto
 {
     public Guid Id { get; init; }
+
+    /// <summary>The row version; the API returns it as the <c>ETag</c>.</summary>
+    public uint Version { get; init; }
     public Guid MemberId { get; init; }
     public Guid CourtId { get; init; }
     public DateTimeOffset Start { get; init; }

@@ -19,12 +19,13 @@ internal sealed class CreateCourtEndpoint : IEndpoint
 
     private static async Task<Results<CreatedAtRoute<CreateCourtResponse>, ProblemHttpResult>> HandleAsync(
         CreateCourtRequest request,
+        HttpResponse response,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
     {
         var command = new CreateCourtCommand { Name = request.Name, Surface = request.Surface };
 
         var result = await dispatcher.Send<CreateCourtCommand, CourtDto>(command, cancellationToken);
-        return result.ToHttpResult(court => TypedResults.CreatedAtRoute(CreateCourtResponse.From(court), GetCourtEndpoint.Name, new { id = court.Id }));
+        return result.ToHttpResult(court => response.WithETag(court.Version, TypedResults.CreatedAtRoute(CreateCourtResponse.From(court), GetCourtEndpoint.Name, new { id = court.Id })));
     }
 }

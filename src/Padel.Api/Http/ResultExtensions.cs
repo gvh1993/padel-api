@@ -31,6 +31,7 @@ internal static class ResultExtensions
             ConflictError conflict => Problem(new ProblemDetails(), StatusCodes.Status409Conflict, "The request conflicts with the current state.", conflict.Description),
             ForbiddenError forbidden => Problem(new ProblemDetails(), StatusCodes.Status403Forbidden, "Access denied.", forbidden.Description),
             BusinessRuleError businessRule => Problem(new ProblemDetails(), StatusCodes.Status422UnprocessableEntity, "A business rule was violated.", businessRule.Description),
+            PreconditionFailedError stale => Problem(new ProblemDetails(), StatusCodes.Status412PreconditionFailed, "The resource was changed.", stale.Description),
         };
 
         problem.Extensions["errorCode"] = error.Code;
