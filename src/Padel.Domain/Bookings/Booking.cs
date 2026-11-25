@@ -4,14 +4,6 @@ using Padel.Domain.Members;
 
 namespace Padel.Domain.Bookings;
 
-public enum BookingStatus
-{
-    Confirmed,
-    Cancelled,
-    Completed,
-    NoShow,
-}
-
 public class Booking : EntityWithDomainEvents
 {
     public Guid MemberId { get; private set; }

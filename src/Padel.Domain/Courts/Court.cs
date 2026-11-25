@@ -2,13 +2,6 @@ using Padel.Domain.Common;
 
 namespace Padel.Domain.Courts;
 
-public enum CourtStatus
-{
-    Available,
-    Maintenance,
-    Retired,
-}
-
 public class Court : EntityWithDomainEvents
 {
     public const int MaxLength = 80;

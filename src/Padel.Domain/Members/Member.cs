@@ -2,12 +2,6 @@ using Padel.Domain.Common;
 
 namespace Padel.Domain.Members;
 
-public enum MemberStatus
-{
-    Active,
-    Suspended,
-}
-
 public class Member : EntityWithDomainEvents
 {
     public const int PhoneMinDigits = 8;
