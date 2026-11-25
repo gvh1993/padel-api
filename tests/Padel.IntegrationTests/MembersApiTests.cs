@@ -1,9 +1,9 @@
 using System.Net;
+using AwesomeAssertions;
 using Padel.Api.Features.Members;
 using Padel.Domain.Members;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
-using TUnit.Assertions.Enums;
 
 namespace Padel.IntegrationTests;
 
@@ -23,13 +23,13 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
             Phone = "+31 (0)10 123 4567",
         });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         var member = response.Value();
-        await Assert.That(member.FirstName).IsEqualTo("Gert-Jan");
-        await Assert.That(member.Email).IsEqualTo(email.ToLowerInvariant());
-        await Assert.That(member.Phone).IsEqualTo("310101234567");
-        await Assert.That(member.Status).IsEqualTo(MemberStatus.Active);
-        await Assert.That(response.Headers!.Location!.AbsolutePath).IsEqualTo($"/api/members/{member.Id}");
+        member.FirstName.Should().Be("Gert-Jan");
+        member.Email.Should().Be(email.ToLowerInvariant());
+        member.Phone.Should().Be("310101234567");
+        member.Status.Should().Be(MemberStatus.Active);
+        response.Headers!.Location!.AbsolutePath.Should().Be($"/api/members/{member.Id}");
     }
 
     [Test]
@@ -44,10 +44,10 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
             Email = existing.Email.ToUpperInvariant(),
         });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var problem = await response.ReadProblemAsync();
-        await Assert.That(problem.Detail).Contains("already exists");
-        await Assert.That(problem.ErrorCode).IsEqualTo("Member.EmailInUse");
+        problem.Detail.Should().Contain("already exists");
+        problem.ErrorCode.Should().Be("Member.EmailInUse");
     }
 
     [Test]
@@ -63,8 +63,8 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
         })));
 
         var statusCodes = responses.Select(r => r.StatusCode).ToList();
-        await Assert.That(statusCodes.Count(s => s == HttpStatusCode.Created)).IsEqualTo(1);
-        await Assert.That(statusCodes.Count(s => s == HttpStatusCode.Conflict)).IsEqualTo(7);
+        statusCodes.Count(s => s == HttpStatusCode.Created).Should().Be(1);
+        statusCodes.Count(s => s == HttpStatusCode.Conflict).Should().Be(7);
     }
 
     [Test]
@@ -78,9 +78,9 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
             Phone = "12",
         });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var problem = await response.ReadProblemAsync();
-        await Assert.That(problem.Errors.Keys).IsEquivalentTo(["firstName", "email", "phone"]);
+        problem.Errors.Keys.Should().BeEquivalentTo(new[] { "firstName", "email", "phone" });
     }
 
     [Test]
@@ -90,8 +90,8 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
 
         var response = await As(member).Members.Get(member.Id);
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
-        await Assert.That(response.Value().Email).IsEqualTo(member.Email);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Value().Email.Should().Be(member.Email);
     }
 
     [Test]
@@ -102,7 +102,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
 
         var response = await As(member).Members.Get(other.Id);
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -110,9 +110,9 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var response = await Admin.Members.Get(Guid.NewGuid());
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var problem = await response.ReadProblemAsync();
-        await Assert.That(problem.Status).IsEqualTo(404);
+        problem.Status.Should().Be(404);
     }
 
     [Test]
@@ -129,11 +129,11 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
             Phone = "0612345678",
         });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var reloaded = (await Admin.Members.Get(member.Id)).Value();
-        await Assert.That(reloaded.FirstName).IsEqualTo("Renamed");
-        await Assert.That(reloaded.Email).IsEqualTo(newEmail);
-        await Assert.That(reloaded.Phone).IsEqualTo("0612345678");
+        reloaded.FirstName.Should().Be("Renamed");
+        reloaded.Email.Should().Be(newEmail);
+        reloaded.Phone.Should().Be("0612345678");
     }
 
     [Test]
@@ -145,10 +145,10 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
         var reloaded = (await Admin.Members.Get(member.Id)).Value();
         var reactivated = (await Admin.Members.Reactivate(member.Id)).Value();
 
-        await Assert.That(suspended.Status).IsEqualTo(MemberStatus.Suspended);
-        await Assert.That(reloaded.SuspensionReason).IsEqualTo("unpaid fees");
-        await Assert.That(reactivated.Status).IsEqualTo(MemberStatus.Active);
-        await Assert.That(reactivated.SuspensionReason).IsNull();
+        suspended.Status.Should().Be(MemberStatus.Suspended);
+        reloaded.SuspensionReason.Should().Be("unpaid fees");
+        reactivated.Status.Should().Be(MemberStatus.Active);
+        reactivated.SuspensionReason.Should().BeNull();
     }
 
     [Test]
@@ -168,9 +168,9 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
         });
 
         var page = response.Value();
-        await Assert.That(page.TotalCount).IsEqualTo(3);
-        await Assert.That(page.TotalPages).IsEqualTo(2);
-        await Assert.That(page.Items.Select(m => m.FirstName)).IsEquivalentTo(["Cees", "Bram"], CollectionOrdering.Matching);
+        page.TotalCount.Should().Be(3);
+        page.TotalPages.Should().Be(2);
+        page.Items.Select(m => m.FirstName).Should().Equal(new[] { "Cees", "Bram" });
     }
 
     [Test]
@@ -183,8 +183,8 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
 
         var page = (await Admin.Members.List(new MemberListParameters { Search = tag, Status = MemberStatus.Suspended })).Value();
 
-        await Assert.That(page.Items).HasSingleItem();
-        await Assert.That(page.Items[0].Id).IsEqualTo(suspended.Id);
+        page.Items.Should().ContainSingle();
+        page.Items[0].Id.Should().Be(suspended.Id);
     }
 
     [Test]
@@ -192,8 +192,8 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var response = await Admin.Members.List(new MemberListParameters { Sort = "password", PageSize = 500 });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var problem = await response.ReadProblemAsync();
-        await Assert.That(problem.Errors.Keys).IsEquivalentTo(["sort", "pageSize"]);
+        problem.Errors.Keys.Should().BeEquivalentTo(new[] { "sort", "pageSize" });
     }
 }

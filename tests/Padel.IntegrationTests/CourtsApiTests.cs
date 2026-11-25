@@ -1,10 +1,10 @@
 using System.Net;
+using AwesomeAssertions;
 using Padel.Api.Features.Courts;
-using Padel.Domain.Courts;
 using Padel.Api.Features.Members;
+using Padel.Domain.Courts;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
-using TUnit.Assertions.Enums;
 
 namespace Padel.IntegrationTests;
 
@@ -18,11 +18,11 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
 
         var response = await Admin.Courts.Create(new CreateCourtRequest { Name = name, Surface = "glass" });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         var court = response.Value();
-        await Assert.That(court.Name).IsEqualTo(name);
-        await Assert.That(court.Status).IsEqualTo(CourtStatus.Available);
-        await Assert.That(response.Headers!.Location!.AbsolutePath).IsEqualTo($"/api/courts/{court.Id}");
+        court.Name.Should().Be(name);
+        court.Status.Should().Be(CourtStatus.Available);
+        response.Headers!.Location!.AbsolutePath.Should().Be($"/api/courts/{court.Id}");
     }
 
     [Test]
@@ -30,8 +30,8 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     {
         var response = await Admin.Courts.Create(new CreateCourtRequest { Name = " ", Surface = "glass" });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
-        await Assert.That((await response.ReadProblemAsync()).Errors.Keys).Contains("name");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.ReadProblemAsync()).Errors.Keys.Should().Contain("name");
     }
 
     [Test]
@@ -45,10 +45,10 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
         var retired = (await Admin.Courts.Retire(court.Id)).Value();
         var reloaded = (await Admin.Courts.Get(court.Id)).Value();
 
-        await Assert.That(renamed.Name).IsEqualTo(newName);
-        await Assert.That(maintenance.Status).IsEqualTo(CourtStatus.Maintenance);
-        await Assert.That(retired.Status).IsEqualTo(CourtStatus.Retired);
-        await Assert.That(reloaded).IsEqualTo(new GetCourtResponse(retired.Id, retired.Name, retired.Surface, retired.Status));
+        renamed.Name.Should().Be(newName);
+        maintenance.Status.Should().Be(CourtStatus.Maintenance);
+        retired.Status.Should().Be(CourtStatus.Retired);
+        reloaded.Should().Be(new GetCourtResponse(retired.Id, retired.Name, retired.Surface, retired.Status));
     }
 
     [Test]
@@ -59,8 +59,8 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
 
         var response = await Admin.Courts.SetMaintenance(court.Id, new SetCourtMaintenanceRequest { UnderMaintenance = true });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.UnprocessableEntity);
-        await Assert.That((await response.ReadProblemAsync()).Detail).Contains("retired");
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.ReadProblemAsync()).Detail.Should().Contain("retired");
     }
 
     [Test]
@@ -80,7 +80,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
             Sort = "name",
         })).Value();
 
-        await Assert.That(page.Items.Select(c => c.Name)).IsEquivalentTo([$"A {tag}", $"B {tag}"], CollectionOrdering.Matching);
+        page.Items.Select(c => c.Name).Should().Equal(new[] { $"A {tag}", $"B {tag}" });
     }
 
     [Test]
@@ -90,6 +90,6 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
 
         var response = await As(member).Courts.Create(new CreateCourtRequest { Name = UniqueName("Court"), Surface = "glass" });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

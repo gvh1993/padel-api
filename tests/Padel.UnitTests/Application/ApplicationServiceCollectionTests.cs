@@ -1,17 +1,17 @@
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Padel.Application;
-using Padel.Application.Common.Behaviors;
-using Padel.Application.Features.Bookings;
 using Padel.Application.Common;
+using Padel.Application.Common.Behaviors;
 using Padel.Application.Common.Messaging;
+using Padel.Application.Features.Bookings;
 using Padel.Application.Features.Courts;
 using Padel.Application.Features.Members;
 using Padel.Domain.Common;
 using Padel.Domain.Members;
 using Padel.UnitTests.Fakes;
-using TUnit.Assertions.Enums;
 
 namespace Padel.UnitTests.Application;
 
@@ -55,12 +55,12 @@ public class ApplicationServiceCollectionTests
                 .Select(contract => (Request: type, Response: contract.GetGenericArguments()[0])))
             .ToList();
 
-        await Assert.That(requestTypes.Count).IsGreaterThan(15);
+        requestTypes.Count.Should().BeGreaterThan(15);
 
         foreach (var (request, response) in requestTypes)
         {
             var handlerType = typeof(IRequestHandler<,>).MakeGenericType(request, response);
-            await Assert.That(scope.ServiceProvider.GetService(handlerType)).IsNotNull();
+            scope.ServiceProvider.GetService(handlerType).Should().NotBeNull();
         }
     }
 
@@ -73,9 +73,7 @@ public class ApplicationServiceCollectionTests
         var behaviors = scope.ServiceProvider.GetServices<IPipelineBehavior<GetMemberQuery, MemberDto>>()
             .Select(behavior => behavior.GetType().GetGenericTypeDefinition());
 
-        await Assert.That(behaviors).IsEquivalentTo(
-            [typeof(TelemetryBehavior<,>), typeof(ValidationBehavior<,>)],
-            CollectionOrdering.Matching);
+        behaviors.Should().Equal(new[] { typeof(TelemetryBehavior<,>), typeof(ValidationBehavior<,>) });
     }
 
     [Test]
@@ -88,7 +86,7 @@ public class ApplicationServiceCollectionTests
         var error = await dispatcher.Send<RegisterMemberCommand, MemberDto>(
             new RegisterMemberCommand { FirstName = "", LastName = "", Email = "" }).ShouldFail().Is<ValidationError>();
 
-        await Assert.That(error.FieldErrors.Keys).Contains("Email");
+        error.FieldErrors.Keys.Should().Contain("Email");
     }
 
     [Test]
@@ -101,7 +99,7 @@ public class ApplicationServiceCollectionTests
         await scope.ServiceProvider.GetRequiredService<IDomainEventPublisher>().PublishAsync(domainEvent);
 
         var handler = (RecordingMemberRegisteredHandler)scope.ServiceProvider.GetRequiredService<IDomainEventHandler<MemberRegistered>>();
-        await Assert.That(handler.Received).IsEquivalentTo([domainEvent]);
+        handler.Received.Should().BeEquivalentTo(new[] { domainEvent });
     }
 
     [Test]
@@ -110,8 +108,8 @@ public class ApplicationServiceCollectionTests
         await using var provider = BuildProvider();
         await using var scope = provider.CreateAsyncScope();
 
-        await Assert.That(() => scope.ServiceProvider.GetRequiredService<IDomainEventPublisher>()
-            .PublishAsync(new MemberSuspended(Guid.NewGuid(), null))).ThrowsNothing();
+        await FluentActions.Awaiting(() => scope.ServiceProvider.GetRequiredService<IDomainEventPublisher>()
+            .PublishAsync(new MemberSuspended(Guid.NewGuid(), null))).Should().NotThrowAsync();
     }
 
     [Test]
@@ -119,6 +117,6 @@ public class ApplicationServiceCollectionTests
     {
         await using var provider = BuildProvider();
 
-        await Assert.That(provider.GetRequiredService<TimeProvider>()).IsSameReferenceAs(TimeProvider.System);
+        provider.GetRequiredService<TimeProvider>().Should().BeSameAs(TimeProvider.System);
     }
 }

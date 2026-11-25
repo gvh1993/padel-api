@@ -1,7 +1,8 @@
 using System.Net;
-using Padel.Api.Features.Members;
-using Padel.Api.Features.Courts;
+using AwesomeAssertions;
 using Padel.Api.Features.Bookings;
+using Padel.Api.Features.Courts;
+using Padel.Api.Features.Members;
 using Padel.IntegrationTests.Infrastructure;
 
 namespace Padel.IntegrationTests;
@@ -14,7 +15,7 @@ public class AuthenticationTests(PadelApiFactory factory) : IntegrationTestBase(
     {
         var response = await Anonymous.Courts.List();
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Unauthorized);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Test]
@@ -22,7 +23,7 @@ public class AuthenticationTests(PadelApiFactory factory) : IntegrationTestBase(
     {
         var response = await WithToken(Tokens.Forged()).Courts.List();
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Unauthorized);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Test]
@@ -37,7 +38,7 @@ public class AuthenticationTests(PadelApiFactory factory) : IntegrationTestBase(
             Email = UniqueEmail(),
         });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -47,7 +48,7 @@ public class AuthenticationTests(PadelApiFactory factory) : IntegrationTestBase(
 
         var response = await As(member).Members.List();
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -55,8 +56,8 @@ public class AuthenticationTests(PadelApiFactory factory) : IntegrationTestBase(
     {
         var response = await Unlinked.Bookings.List();
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         var problem = await response.ReadProblemAsync();
-        await Assert.That(problem.TraceId).IsNotNull();
+        problem.TraceId.Should().NotBeNull();
     }
 }

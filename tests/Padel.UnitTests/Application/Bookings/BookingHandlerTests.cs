@@ -1,9 +1,9 @@
+using AwesomeAssertions;
 using Padel.Application.Common;
 using Padel.Application.Features.Bookings;
 using Padel.Domain.Bookings;
 using Padel.Domain.Common;
 using Padel.UnitTests.Fakes;
-using TUnit.Assertions.Enums;
 
 namespace Padel.UnitTests.Application.Bookings;
 
@@ -33,11 +33,11 @@ public class BookingHandlerTests
 
         var result = await CreateHandler.Handle(Command(member.Id, court.Id, Tomorrow10), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(BookingStatus.Confirmed);
-        await Assert.That(result.Start).IsEqualTo(Tomorrow10);
-        await Assert.That(result.CreatedOn).IsEqualTo(HandlerFixture.Now);
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(1);
-        await Assert.That(_fixture.UnitOfWork.PublishedEvents.Single()).IsTypeOf<BookingCreated>();
+        result.Status.Should().Be(BookingStatus.Confirmed);
+        result.Start.Should().Be(Tomorrow10);
+        result.CreatedOn.Should().Be(HandlerFixture.Now);
+        _fixture.UnitOfWork.SaveCount.Should().Be(1);
+        _fixture.UnitOfWork.PublishedEvents.Single().Should().BeOfType<BookingCreated>();
     }
 
     [Test]
@@ -49,9 +49,9 @@ public class BookingHandlerTests
 
         var error = await CreateHandler.Handle(Command(member.Id, court.Id, Tomorrow10.AddMinutes(30)), CancellationToken.None).ShouldFail().Is<ConflictError>();
 
-        await Assert.That(error.Description).Contains("already booked");
-        await Assert.That(_fixture.Bookings.Store).HasSingleItem();
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
+        error.Description.Should().Contain("already booked");
+        _fixture.Bookings.Store.Should().ContainSingle();
+        _fixture.UnitOfWork.SaveCount.Should().Be(0);
     }
 
     [Test]
@@ -63,7 +63,7 @@ public class BookingHandlerTests
 
         var result = await CreateHandler.Handle(Command(member.Id, court.Id, Tomorrow10), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(BookingStatus.Confirmed);
+        result.Status.Should().Be(BookingStatus.Confirmed);
     }
 
     [Test]
@@ -75,7 +75,7 @@ public class BookingHandlerTests
 
         var result = await CreateHandler.Handle(Command(member.Id, court.Id, Tomorrow10.AddHours(1)), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Start).IsEqualTo(Tomorrow10.AddHours(1));
+        result.Start.Should().Be(Tomorrow10.AddHours(1));
     }
 
     [Test]
@@ -102,7 +102,7 @@ public class BookingHandlerTests
         var court = _fixture.AddCourt();
 
         await CreateHandler.Handle(Command(member.Id, court.Id, Tomorrow10), CancellationToken.None).ShouldFail().Is<BusinessRuleError>();
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
+        _fixture.UnitOfWork.SaveCount.Should().Be(0);
     }
 
     [Test]
@@ -123,7 +123,7 @@ public class BookingHandlerTests
 
         var result = await CreateHandler.Handle(Command(member.Id, court.Id, Tomorrow10), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.MemberId).IsEqualTo(member.Id);
+        result.MemberId.Should().Be(member.Id);
     }
 
     [Test]
@@ -146,10 +146,10 @@ public class BookingHandlerTests
 
         var result = await handler.Handle(new CancelBookingCommand(booking.Id, "no time"), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(BookingStatus.Cancelled);
-        await Assert.That(result.CancellationReason).IsEqualTo("no time");
+        result.Status.Should().Be(BookingStatus.Cancelled);
+        result.CancellationReason.Should().Be("no time");
         var cancelled = (BookingCancelled)_fixture.UnitOfWork.PublishedEvents.Single();
-        await Assert.That(cancelled.Reason).IsEqualTo("no time");
+        cancelled.Reason.Should().Be("no time");
     }
 
     [Test]
@@ -160,7 +160,7 @@ public class BookingHandlerTests
         var handler = new CancelBookingCommandHandler(_fixture.Bookings, _fixture.UnitOfWork, _fixture.CurrentUser);
 
         await handler.Handle(new CancelBookingCommand(booking.Id), CancellationToken.None).ShouldFail().Is<ForbiddenError>();
-        await Assert.That(booking.Status).IsEqualTo(BookingStatus.Confirmed);
+        booking.Status.Should().Be(BookingStatus.Confirmed);
     }
 
     [Test]
@@ -180,7 +180,7 @@ public class BookingHandlerTests
 
         var result = await handler.Handle(new CompleteBookingCommand(booking.Id), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(BookingStatus.Completed);
+        result.Status.Should().Be(BookingStatus.Completed);
     }
 
     [Test]
@@ -201,7 +201,7 @@ public class BookingHandlerTests
 
         var result = await handler.Handle(new MarkBookingNoShowCommand(booking.Id), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(BookingStatus.NoShow);
+        result.Status.Should().Be(BookingStatus.NoShow);
     }
 
     [Test]
@@ -227,8 +227,8 @@ public class BookingHandlerTests
 
         var result = await handler.Handle(new ListBookingsQuery(), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items).HasSingleItem();
-        await Assert.That(result.Items[0].MemberId).IsEqualTo(me.Id);
+        result.Items.Should().ContainSingle();
+        result.Items[0].MemberId.Should().Be(me.Id);
     }
 
     [Test]
@@ -271,7 +271,7 @@ public class BookingHandlerTests
             Sort = "-start",
         }, CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items.Select(b => b.Id)).IsEquivalentTo([late.Id, early.Id], CollectionOrdering.Matching);
+        result.Items.Select(b => b.Id).Should().Equal(new[] { late.Id, early.Id });
     }
 
     [Test]
@@ -286,7 +286,7 @@ public class BookingHandlerTests
 
         var result = await handler.Handle(new ListCourtBookingsQuery { CourtId = court.Id }, CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items.Select(b => b.Id)).IsEquivalentTo([earlier.Id, later.Id], CollectionOrdering.Matching);
+        result.Items.Select(b => b.Id).Should().Equal(new[] { earlier.Id, later.Id });
     }
 
     [Test]

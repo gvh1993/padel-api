@@ -3,7 +3,7 @@
 API for a padel club: members, courts and bookings.
 
 **Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
-**Tests:** TUnit. The integration tests use Testcontainers (PostgreSQL and Keycloak) and Refit; the architecture tests use NetArchTest.
+**Tests:** TUnit (engine only) with AwesomeAssertions. The integration tests use Testcontainers (PostgreSQL and Keycloak) and Refit; the architecture tests use NetArchTest.
 
 ## Requirements
 
@@ -174,6 +174,8 @@ dotnet test
 | `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL and Keycloak containers (Testcontainers). Each test member gets its own Keycloak user with a `member_id` attribute. |
 
 Test names follow `Action_Should_Outcome` and `Given_Context_Action_Should_Outcome`.
+
+Assertions use AwesomeAssertions (`value.Should().Be(expected)`). Results have their own helpers: `result.ShouldSucceed()` returns the value, and `result.ShouldFail().Is<NotFoundError>()` checks the kind of error. Only `TUnit.Engine` is referenced, so TUnit's own assertions are not available and cannot creep back in.
 
 ## Migrations
 

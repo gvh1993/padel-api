@@ -1,6 +1,6 @@
+using AwesomeAssertions;
 using NetArchTest.Rules;
 using Padel.Application.Common.Messaging;
-using TUnit.Assertions.Enums;
 
 namespace Padel.ArchitectureTests;
 
@@ -15,7 +15,7 @@ public class VerticalSliceTests
     [Test]
     [Arguments("Members", new[] { "Courts", "Bookings" })]
     [Arguments("Courts", new[] { "Members", "Bookings" })]
-    public Task Feature_Should_NotDependOnOtherFeatures(string feature, string[] otherFeatures) =>
+    public void Feature_Should_NotDependOnOtherFeatures(string feature, string[] otherFeatures) =>
         Types.InAssembly(Layers.Application)
             .That().ResideInNamespace($"{Features}.{feature}")
             .ShouldNot()
@@ -23,14 +23,14 @@ public class VerticalSliceTests
             .ShouldPass();
 
     [Test]
-    public Task Requests_Should_LiveInAFeature() =>
+    public void Requests_Should_LiveInAFeature() =>
         Types.InAssembly(Layers.Application)
             .That().ImplementInterface(typeof(IRequest<>))
             .Should().ResideInNamespaceStartingWith(Features)
             .ShouldPass();
 
     [Test]
-    public async Task EveryRequest_Should_HaveExactlyOneHandler()
+    public void EveryRequest_Should_HaveExactlyOneHandler()
     {
         var types = Layers.Application.GetTypes();
 
@@ -46,7 +46,7 @@ public class VerticalSliceTests
             .Where(request => handledRequests.Count(handled => handled == request) != 1)
             .Select(request => request.Name);
 
-        await Assert.That(withoutExactlyOneHandler).IsEmpty();
+        withoutExactlyOneHandler.Should().BeEmpty();
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class VerticalSliceTests
     /// <c>CancelBookingEndpoint</c>), in the same feature, and the other way round.
     /// </summary>
     [Test]
-    public async Task EveryRequest_Should_HaveOneEndpointInTheSameFeature()
+    public void EveryRequest_Should_HaveOneEndpointInTheSameFeature()
     {
         var useCases = Layers.Application.GetTypes()
             .Where(type => !type.IsAbstract && type.GetInterfaces()
@@ -68,7 +68,7 @@ public class VerticalSliceTests
             .Order()
             .ToList();
 
-        await Assert.That(endpoints).IsEquivalentTo(useCases, CollectionOrdering.Matching);
+        endpoints.Should().Equal(useCases);
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public class VerticalSliceTests
     /// enums and framework types, but never application DTOs, commands or queries.
     /// </summary>
     [Test]
-    public async Task ApiContracts_Should_NotExposeApplicationTypes()
+    public void ApiContracts_Should_NotExposeApplicationTypes()
     {
         var contracts = Layers.Api.GetExportedTypes()
             .Where(type => type.Namespace?.StartsWith($"{Layers.ApiNamespace}.Features", StringComparison.Ordinal) == true);
@@ -86,7 +86,7 @@ public class VerticalSliceTests
             .Where(member => ExposedTypes(member.property.PropertyType).Any(exposed => exposed.Assembly == Layers.Application))
             .Select(member => $"{member.type.Name}.{member.property.Name}");
 
-        await Assert.That(leaks).IsEmpty();
+        leaks.Should().BeEmpty();
     }
 
     private static IEnumerable<Type> ExposedTypes(Type type) =>

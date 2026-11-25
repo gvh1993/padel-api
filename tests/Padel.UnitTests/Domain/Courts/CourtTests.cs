@@ -1,3 +1,4 @@
+using AwesomeAssertions;
 using Padel.Domain.Common;
 using Padel.Domain.Courts;
 
@@ -8,68 +9,68 @@ public class CourtTests
     private static Court CreateCourt() => Court.Create("Court A", "glass").ShouldSucceed();
 
     [Test]
-    public async Task Create_Should_CreateAvailableCourtAndRaiseCourtCreated()
+    public void Create_Should_CreateAvailableCourtAndRaiseCourtCreated()
     {
         var court = CreateCourt();
 
-        await Assert.That(court.Status).IsEqualTo(CourtStatus.Available);
-        await Assert.That(court.CanBeBooked).IsTrue();
+        court.Status.Should().Be(CourtStatus.Available);
+        court.CanBeBooked.Should().BeTrue();
         var created = (CourtCreated)court.DomainEvents.Single();
-        await Assert.That(created.CourtId).IsEqualTo(court.Id);
+        created.CourtId.Should().Be(court.Id);
     }
 
     [Test]
     [Arguments("")]
     [Arguments("   ")]
-    public async Task Given_BlankNameOrSurface_Should_Fail(string value)
+    public void Given_BlankNameOrSurface_Should_Fail(string value)
     {
-        await Court.Create(value, "glass").ShouldFail();
-        await Court.Create("Court A", value).ShouldFail();
+        Court.Create(value, "glass").ShouldFail();
+        Court.Create("Court A", value).ShouldFail();
     }
 
     [Test]
-    public async Task Given_NameLongerThanMaxLength_Should_Fail()
+    public void Given_NameLongerThanMaxLength_Should_Fail()
     {
-        await Court.Create(new string('a', Court.MaxLength + 1), "glass").ShouldFail();
+        Court.Create(new string('a', Court.MaxLength + 1), "glass").ShouldFail();
     }
 
     [Test]
-    public async Task Rename_Should_TrimAndReplaceTheName()
+    public void Rename_Should_TrimAndReplaceTheName()
     {
         var court = CreateCourt();
 
         court.Rename("  Centre Court ");
 
-        await Assert.That(court.Name).IsEqualTo("Centre Court");
+        court.Name.Should().Be("Centre Court");
     }
 
     [Test]
-    public async Task SetMaintenance_Should_ToggleBetweenMaintenanceAndAvailable()
+    public void SetMaintenance_Should_ToggleBetweenMaintenanceAndAvailable()
     {
         var court = CreateCourt();
 
         court.SetMaintenance(true);
-        await Assert.That(court.Status).IsEqualTo(CourtStatus.Maintenance);
-        await Assert.That(court.CanBeBooked).IsFalse();
+        court.Status.Should().Be(CourtStatus.Maintenance);
+        court.CanBeBooked.Should().BeFalse();
 
         court.SetMaintenance(false);
-        await Assert.That(court.Status).IsEqualTo(CourtStatus.Available);
+        court.Status.Should().Be(CourtStatus.Available);
     }
 
     [Test]
-    public async Task Retire_Should_RetireCourtAndRaiseCourtRetired()
+    public void Retire_Should_RetireCourtAndRaiseCourtRetired()
     {
         var court = CreateCourt();
         court.ClearDomainEvents();
 
         court.Retire();
 
-        await Assert.That(court.Status).IsEqualTo(CourtStatus.Retired);
-        await Assert.That(court.DomainEvents.Single()).IsTypeOf<CourtRetired>();
+        court.Status.Should().Be(CourtStatus.Retired);
+        court.DomainEvents.Single().Should().BeOfType<CourtRetired>();
     }
 
     [Test]
-    public async Task Given_RetiredCourt_Retire_Should_NotRaiseSecondEvent()
+    public void Given_RetiredCourt_Retire_Should_NotRaiseSecondEvent()
     {
         var court = CreateCourt();
         court.Retire();
@@ -77,15 +78,15 @@ public class CourtTests
 
         court.Retire();
 
-        await Assert.That(court.DomainEvents).IsEmpty();
+        court.DomainEvents.Should().BeEmpty();
     }
 
     [Test]
-    public async Task Given_RetiredCourt_SetMaintenance_Should_Fail()
+    public void Given_RetiredCourt_SetMaintenance_Should_Fail()
     {
         var court = CreateCourt();
         court.Retire();
 
-        await court.SetMaintenance(true).ShouldFail();
+        court.SetMaintenance(true).ShouldFail();
     }
 }

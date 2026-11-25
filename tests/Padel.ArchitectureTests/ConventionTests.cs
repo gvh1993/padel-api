@@ -1,4 +1,5 @@
 using System.Reflection;
+using AwesomeAssertions;
 using FluentValidation;
 using NetArchTest.Rules;
 using Padel.Application.Common.Messaging;
@@ -10,14 +11,14 @@ public class ConventionTests
 {
     /// <summary>Expected failures are <c>Result</c>s with an <c>Error</c>, never custom exceptions.</summary>
     [Test]
-    public Task Layers_Should_NotDefineExceptions() =>
+    public void Layers_Should_NotDefineExceptions() =>
         Types.InAssemblies([Layers.Domain, Layers.Application, Layers.Infrastructure, Layers.Api])
             .ShouldNot()
             .Inherit(typeof(Exception))
             .ShouldPass();
 
     [Test]
-    public Task RequestHandlers_Should_BeSealedAndNamedHandler() =>
+    public void RequestHandlers_Should_BeSealedAndNamedHandler() =>
         Types.InAssembly(Layers.Application)
             .That().ImplementInterface(typeof(IRequestHandler<,>))
             .Should().BeSealed()
@@ -25,7 +26,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public Task Validators_Should_BeSealedAndNamedValidator() =>
+    public void Validators_Should_BeSealedAndNamedValidator() =>
         Types.InAssembly(Layers.Application)
             .That().Inherit(typeof(AbstractValidator<>))
             .And().AreNotAbstract()
@@ -34,7 +35,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public Task Requests_Should_BeNamedCommandOrQuery() =>
+    public void Requests_Should_BeNamedCommandOrQuery() =>
         Types.InAssembly(Layers.Application)
             .That().ImplementInterface(typeof(IRequest<>))
             .Should().HaveNameEndingWith("Command")
@@ -42,7 +43,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public Task DomainEvents_Should_BeSealed() =>
+    public void DomainEvents_Should_BeSealed() =>
         Types.InAssembly(Layers.Domain)
             .That().ImplementInterface(typeof(IDomainEvent))
             .And().AreNotAbstract()
@@ -50,7 +51,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public async Task Entities_Should_NotHavePublicSetters()
+    public void Entities_Should_NotHavePublicSetters()
     {
         var publicSetters = Layers.Domain.GetTypes()
             .Where(type => type.IsSubclassOf(typeof(Entity)))
@@ -58,16 +59,16 @@ public class ConventionTests
                 .Where(property => property.SetMethod?.IsPublic == true)
                 .Select(property => $"{type.Name}.{property.Name}"));
 
-        await Assert.That(publicSetters).IsEmpty();
+        publicSetters.Should().BeEmpty();
     }
 
     [Test]
-    public async Task Endpoints_Should_BeInternalSealedAndNamedEndpoint()
+    public void Endpoints_Should_BeInternalSealedAndNamedEndpoint()
     {
         var violations = Layers.ApiEndpoints()
             .Where(endpoint => endpoint.IsPublic || !endpoint.IsSealed || !endpoint.Name.EndsWith("Endpoint", StringComparison.Ordinal))
             .Select(endpoint => endpoint.FullName);
 
-        await Assert.That(violations).IsEmpty();
+        violations.Should().BeEmpty();
     }
 }

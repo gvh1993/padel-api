@@ -8,42 +8,42 @@ namespace Padel.ArchitectureTests;
 public class LayerDependencyTests
 {
     [Test]
-    public Task Domain_Should_NotDependOnOtherLayers() =>
+    public void Domain_Should_NotDependOnOtherLayers() =>
         Types.InAssembly(Layers.Domain)
             .ShouldNot()
             .HaveDependencyOnAny(Layers.ApplicationNamespace, Layers.InfrastructureNamespace, Layers.ApiNamespace)
             .ShouldPass();
 
     [Test]
-    public Task Domain_Should_NotDependOnFrameworks() =>
+    public void Domain_Should_NotDependOnFrameworks() =>
         Types.InAssembly(Layers.Domain)
             .ShouldNot()
             .HaveDependencyOnAny("Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore", "Npgsql", "FluentValidation")
             .ShouldPass();
 
     [Test]
-    public Task Application_Should_NotDependOnInfrastructureOrApi() =>
+    public void Application_Should_NotDependOnInfrastructureOrApi() =>
         Types.InAssembly(Layers.Application)
             .ShouldNot()
             .HaveDependencyOnAny(Layers.InfrastructureNamespace, Layers.ApiNamespace)
             .ShouldPass();
 
     [Test]
-    public Task Application_Should_NotDependOnPersistenceOrWebFrameworks() =>
+    public void Application_Should_NotDependOnPersistenceOrWebFrameworks() =>
         Types.InAssembly(Layers.Application)
             .ShouldNot()
             .HaveDependencyOnAny("Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore", "OpenTelemetry")
             .ShouldPass();
 
     [Test]
-    public Task Infrastructure_Should_NotDependOnApi() =>
+    public void Infrastructure_Should_NotDependOnApi() =>
         Types.InAssembly(Layers.Infrastructure)
             .ShouldNot()
             .HaveDependencyOn(Layers.ApiNamespace)
             .ShouldPass();
 
     [Test]
-    public Task ApiFeatures_Should_NotUseInfrastructure() =>
+    public void ApiFeatures_Should_NotUseInfrastructure() =>
         Types.InAssembly(Layers.Api)
             .That().ResideInNamespaceStartingWith($"{Layers.ApiNamespace}.Features")
             .ShouldNot()

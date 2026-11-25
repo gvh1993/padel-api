@@ -1,11 +1,11 @@
 using System.Net;
+using AwesomeAssertions;
 using Padel.Api.Features.Bookings;
 using Padel.Api.Features.Courts;
 using Padel.Api.Features.Members;
 using Padel.Domain.Bookings;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
-using TUnit.Assertions.Enums;
 
 namespace Padel.IntegrationTests;
 
@@ -29,14 +29,14 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, start));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         var booking = response.Value();
-        await Assert.That(booking.Status).IsEqualTo(BookingStatus.Confirmed);
-        await Assert.That(booking.Start).IsEqualTo(start);
-        await Assert.That(booking.End).IsEqualTo(start.AddHours(1));
+        booking.Status.Should().Be(BookingStatus.Confirmed);
+        booking.Start.Should().Be(start);
+        booking.End.Should().Be(start.AddHours(1));
 
         var schedule = (await As(member).Courts.ListBookings(court.Id)).Value();
-        await Assert.That(schedule.Items.Select(b => b.Id)).IsEquivalentTo([booking.Id]);
+        schedule.Items.Select(b => b.Id).Should().BeEquivalentTo(new[] { booking.Id });
     }
 
     [Test]
@@ -49,8 +49,8 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var booking = (await As(member).Bookings.Create(NewBooking(member.Id, court.Id, startAmsterdam))).Value();
 
-        await Assert.That(booking.Start.Offset).IsEqualTo(TimeSpan.Zero);
-        await Assert.That(booking.Start).IsEqualTo(startUtc);
+        booking.Start.Offset.Should().Be(TimeSpan.Zero);
+        booking.Start.Should().Be(startUtc);
     }
 
     [Test]
@@ -63,8 +63,8 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, start.AddMinutes(30)));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
-        await Assert.That((await response.ReadProblemAsync()).Detail).Contains("already booked");
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await response.ReadProblemAsync()).Detail.Should().Contain("already booked");
     }
 
     [Test]
@@ -78,11 +78,11 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
             As(member).Bookings.Create(NewBooking(member.Id, court.Id, start))));
 
         var statusCodes = responses.Select(r => r.StatusCode).ToList();
-        await Assert.That(statusCodes.Count(s => s == HttpStatusCode.Created)).IsEqualTo(1);
-        await Assert.That(statusCodes.Count(s => s == HttpStatusCode.Conflict)).IsEqualTo(7);
+        statusCodes.Count(s => s == HttpStatusCode.Created).Should().Be(1);
+        statusCodes.Count(s => s == HttpStatusCode.Conflict).Should().Be(7);
 
         var schedule = (await Admin.Courts.ListBookings(court.Id)).Value();
-        await Assert.That(schedule.TotalCount).IsEqualTo(1);
+        schedule.TotalCount.Should().Be(1);
     }
 
     [Test]
@@ -94,8 +94,8 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot()));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.UnprocessableEntity);
-        await Assert.That((await response.ReadProblemAsync()).Detail).Contains("suspended");
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.ReadProblemAsync()).Detail.Should().Contain("suspended");
     }
 
     [Test]
@@ -107,7 +107,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot()));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.UnprocessableEntity);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Test]
@@ -118,7 +118,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot(daysAhead: -2)));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.UnprocessableEntity);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Test]
@@ -128,7 +128,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(member.Id, Guid.NewGuid(), FutureSlot()));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Test]
@@ -139,8 +139,8 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot(), minutes: 15));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
-        await Assert.That((await response.ReadProblemAsync()).Errors.Keys).Contains("end");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.ReadProblemAsync()).Errors.Keys.Should().Contain("end");
     }
 
     [Test]
@@ -152,7 +152,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Create(NewBooking(other.Id, court.Id, FutureSlot()));
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -166,9 +166,9 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var cancelled = (await As(member).Bookings.Cancel(booking.Id, new CancelBookingRequest { Reason = "injury" })).Value();
         var rebooked = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, start));
 
-        await Assert.That(cancelled.Status).IsEqualTo(BookingStatus.Cancelled);
-        await Assert.That(cancelled.CancellationReason).IsEqualTo("injury");
-        await Assert.That(rebooked.StatusCode).IsEqualTo(HttpStatusCode.Created);
+        cancelled.Status.Should().Be(BookingStatus.Cancelled);
+        cancelled.CancellationReason.Should().Be("injury");
+        rebooked.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Test]
@@ -180,7 +180,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(other).Bookings.Cancel(booking.Id, new CancelBookingRequest());
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -192,7 +192,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.Cancel(booking.Id, new CancelBookingRequest());
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.UnprocessableEntity);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Test]
@@ -203,7 +203,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await Admin.Bookings.Complete(booking.Id);
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.UnprocessableEntity);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Test]
@@ -214,7 +214,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.MarkNoShow(booking.Id);
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -228,7 +228,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var page = (await As(member).Bookings.List()).Value();
 
-        await Assert.That(page.Items.Select(b => b.Id)).IsEquivalentTo([own.Id]);
+        page.Items.Select(b => b.Id).Should().BeEquivalentTo(new[] { own.Id });
     }
 
     [Test]
@@ -239,7 +239,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
 
         var response = await As(member).Bookings.List(new BookingListParameters { MemberId = other.Id });
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -262,7 +262,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
             Sort = "-start",
         })).Value();
 
-        await Assert.That(page.Items.Select(b => b.Id)).IsEquivalentTo([evening.Id, morning.Id], CollectionOrdering.Matching);
+        page.Items.Select(b => b.Id).Should().Equal(new[] { evening.Id, morning.Id });
     }
 
     [Test]
@@ -270,6 +270,6 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     {
         var response = await Admin.Courts.ListBookings(Guid.NewGuid());
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

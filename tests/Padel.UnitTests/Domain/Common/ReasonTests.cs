@@ -1,3 +1,4 @@
+using AwesomeAssertions;
 using Padel.Domain.Common;
 
 namespace Padel.UnitTests.Domain.Common;
@@ -8,20 +9,20 @@ public class ReasonTests
     [Arguments(null)]
     [Arguments("")]
     [Arguments("   ")]
-    public async Task Given_BlankReason_Create_Should_ReturnNone(string? reason)
+    public void Given_BlankReason_Create_Should_ReturnNone(string? reason)
     {
-        await Assert.That(Reason.Create(reason).ShouldSucceed()).IsEqualTo(Reason.None);
+        Reason.Create(reason).ShouldSucceed().Should().Be(Reason.None);
     }
 
     [Test]
-    public async Task Create_Should_TrimTheReason()
+    public void Create_Should_TrimTheReason()
     {
-        await Assert.That(Reason.Create("  rain  ").ShouldSucceed().Text).IsEqualTo("rain");
+        Reason.Create("  rain  ").ShouldSucceed().Text.Should().Be("rain");
     }
 
     [Test]
-    public async Task Given_ReasonLongerThanMaxLength_Should_Fail()
+    public void Given_ReasonLongerThanMaxLength_Should_Fail()
     {
-        await Reason.Create(new string('x', Reason.MaxLength + 1)).ShouldFail();
+        Reason.Create(new string('x', Reason.MaxLength + 1)).ShouldFail();
     }
 }

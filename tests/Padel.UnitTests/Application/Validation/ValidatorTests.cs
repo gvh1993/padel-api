@@ -1,3 +1,4 @@
+using AwesomeAssertions;
 using Padel.Application.Features.Bookings;
 using Padel.Application.Features.Courts;
 using Padel.Application.Features.Members;
@@ -19,7 +20,7 @@ public class ValidatorTests
     {
         var result = await new RegisterMemberCommandValidator().ValidateAsync(ValidRegistration);
 
-        await Assert.That(result.IsValid).IsTrue();
+        result.IsValid.Should().BeTrue();
     }
 
     [Test]
@@ -31,7 +32,7 @@ public class ValidatorTests
     {
         var result = await new RegisterMemberCommandValidator().ValidateAsync(ValidRegistration with { Phone = phone });
 
-        await Assert.That(result.Errors.Select(e => e.PropertyName)).Contains("Phone");
+        result.Errors.Select(e => e.PropertyName).Should().Contain("Phone");
     }
 
     [Test]
@@ -40,8 +41,7 @@ public class ValidatorTests
         var result = await new RegisterMemberCommandValidator().ValidateAsync(
             ValidRegistration with { FirstName = "", LastName = " ", Email = "not-an-email" });
 
-        await Assert.That(result.Errors.Select(e => e.PropertyName).Distinct())
-            .IsEquivalentTo(["FirstName", "LastName", "Email"]);
+        result.Errors.Select(e => e.PropertyName).Distinct().Should().BeEquivalentTo(new[] { "FirstName", "LastName", "Email" });
     }
 
     [Test]
@@ -60,7 +60,7 @@ public class ValidatorTests
             End = start.AddMinutes(minutes),
         });
 
-        await Assert.That(result.Errors.Select(e => e.PropertyName)).Contains("End");
+        result.Errors.Select(e => e.PropertyName).Should().Contain("End");
     }
 
     [Test]
@@ -76,7 +76,7 @@ public class ValidatorTests
             End = start.AddHours(1),
         });
 
-        await Assert.That(result.Errors.Select(e => e.PropertyName)).IsEquivalentTo(["MemberId", "CourtId"]);
+        result.Errors.Select(e => e.PropertyName).Should().BeEquivalentTo(new[] { "MemberId", "CourtId" });
     }
 
     [Test]
@@ -87,7 +87,7 @@ public class ValidatorTests
     {
         var result = await new ListCourtsQueryValidator().ValidateAsync(new ListCourtsQuery { Page = page, PageSize = pageSize });
 
-        await Assert.That(result.IsValid).IsFalse();
+        result.IsValid.Should().BeFalse();
     }
 
     [Test]
@@ -96,9 +96,9 @@ public class ValidatorTests
         var result = await new ListMembersQueryValidator().ValidateAsync(new ListMembersQuery { Sort = "lastName,-password" });
 
         var error = result.Errors.Single();
-        await Assert.That(error.PropertyName).IsEqualTo("Sort");
-        await Assert.That(error.ErrorMessage).Contains("password");
-        await Assert.That(error.ErrorMessage).Contains("registeredOn");
+        error.PropertyName.Should().Be("Sort");
+        error.ErrorMessage.Should().Contain("password");
+        error.ErrorMessage.Should().Contain("registeredOn");
     }
 
     [Test]
@@ -108,6 +108,6 @@ public class ValidatorTests
 
         var result = await new ListBookingsQueryValidator().ValidateAsync(new ListBookingsQuery { From = from, To = from.AddDays(-1) });
 
-        await Assert.That(result.Errors.Select(e => e.PropertyName)).Contains("To");
+        result.Errors.Select(e => e.PropertyName).Should().Contain("To");
     }
 }

@@ -1,3 +1,4 @@
+using AwesomeAssertions;
 using Padel.Application.Common;
 using Padel.Application.Common.Querying;
 
@@ -12,40 +13,40 @@ public class SortMapTests
         .Add("rank", item => item.Rank);
 
     [Test]
-    public async Task Given_NoSort_Resolve_Should_UseDefaultSort()
+    public void Given_NoSort_Resolve_Should_UseDefaultSort()
     {
         var sorts = Map.Resolve(null);
 
-        await Assert.That(sorts).HasSingleItem();
-        await Assert.That(sorts[0].Descending).IsFalse();
+        sorts.Should().ContainSingle();
+        sorts[0].Descending.Should().BeFalse();
     }
 
     [Test]
-    public async Task Given_MinusPrefix_Resolve_Should_SortDescending()
+    public void Given_MinusPrefix_Resolve_Should_SortDescending()
     {
         var sorts = Map.Resolve(" -RANK , name");
 
-        await Assert.That(sorts.Select(s => s.Descending)).IsEquivalentTo([true, false], TUnit.Assertions.Enums.CollectionOrdering.Matching);
+        sorts.Select(s => s.Descending).Should().Equal(new[] { true, false });
     }
 
     [Test]
-    public async Task Given_DuplicateField_Resolve_Should_KeepFirstOccurrence()
+    public void Given_DuplicateField_Resolve_Should_KeepFirstOccurrence()
     {
         var sorts = Map.Resolve("rank,-rank");
 
-        await Assert.That(sorts).HasSingleItem();
-        await Assert.That(sorts[0].Descending).IsFalse();
+        sorts.Should().ContainSingle();
+        sorts[0].Descending.Should().BeFalse();
     }
 
     [Test]
-    public async Task Given_UnknownField_FindUnknownFields_Should_ReturnIt()
+    public void Given_UnknownField_FindUnknownFields_Should_ReturnIt()
     {
-        await Assert.That(Map.FindUnknownFields("name,-secret")).IsEquivalentTo(["secret"]);
+        Map.FindUnknownFields("name,-secret").Should().BeEquivalentTo(new[] { "secret" });
     }
 
     [Test]
-    public async Task Given_UnknownField_Resolve_Should_ThrowBecauseTheValidatorMustRejectItFirst()
+    public void Given_UnknownField_Resolve_Should_ThrowBecauseTheValidatorMustRejectItFirst()
     {
-        await Assert.That(() => Map.Resolve("secret")).Throws<InvalidOperationException>().WithMessageContaining("secret");
+        FluentActions.Invoking(() => Map.Resolve("secret")).Should().Throw<InvalidOperationException>().WithMessage("*secret*");
     }
 }

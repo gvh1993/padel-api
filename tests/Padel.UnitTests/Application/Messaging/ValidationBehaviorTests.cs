@@ -1,3 +1,4 @@
+using AwesomeAssertions;
 using FluentValidation;
 using Padel.Application.Common.Behaviors;
 using Padel.Application.Features.Members;
@@ -19,7 +20,7 @@ public class ValidationBehaviorTests
 
         var result = await behavior.Handle(command, Next, CancellationToken.None);
 
-        await Assert.That(result.ShouldSucceed()).IsSameReferenceAs(Dto);
+        result.ShouldSucceed().Should().BeSameAs(Dto);
     }
 
     [Test]
@@ -38,8 +39,8 @@ public class ValidationBehaviorTests
             },
             CancellationToken.None).ShouldFail().Is<ValidationError>();
 
-        await Assert.That(error.FieldErrors.Keys).IsEquivalentTo(["FirstName", "Email"]);
-        await Assert.That(nextCalled).IsFalse();
+        error.FieldErrors.Keys.Should().BeEquivalentTo(new[] { "FirstName", "Email" });
+        nextCalled.Should().BeFalse();
     }
 
     [Test]
@@ -50,6 +51,6 @@ public class ValidationBehaviorTests
 
         var result = await behavior.Handle(command, Next, CancellationToken.None);
 
-        await Assert.That(result.ShouldSucceed()).IsSameReferenceAs(Dto);
+        result.ShouldSucceed().Should().BeSameAs(Dto);
     }
 }

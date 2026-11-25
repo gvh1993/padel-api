@@ -1,7 +1,7 @@
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Padel.Application.Common.Messaging;
 using Padel.Domain.Common;
-using TUnit.Assertions.Enums;
 
 namespace Padel.UnitTests.Application.Messaging;
 
@@ -66,10 +66,8 @@ public class RequestDispatcherTests
 
         var response = await provider.GetRequiredService<IRequestDispatcher>().Send<Ping, string>(new Ping("x")).ShouldSucceed();
 
-        await Assert.That(response).IsEqualTo("pong:x");
-        await Assert.That(provider.GetRequiredService<CallLog>().Entries).IsEquivalentTo(
-            ["outer:before", "inner:before", "handler", "inner:after", "outer:after"],
-            CollectionOrdering.Matching);
+        response.Should().Be("pong:x");
+        provider.GetRequiredService<CallLog>().Entries.Should().Equal(new[] { "outer:before", "inner:before", "handler", "inner:after", "outer:after" });
     }
 
     [Test]
@@ -84,8 +82,8 @@ public class RequestDispatcherTests
 
         var error = await provider.GetRequiredService<IRequestDispatcher>().Send<Ping, string>(new Ping("x")).ShouldFail();
 
-        await Assert.That(error).IsEqualTo(ShortCircuitBehavior.Rejected);
-        await Assert.That(provider.GetRequiredService<CallLog>().Entries).IsEmpty();
+        error.Should().Be(ShortCircuitBehavior.Rejected);
+        provider.GetRequiredService<CallLog>().Entries.Should().BeEmpty();
     }
 
     [Test]
@@ -95,7 +93,7 @@ public class RequestDispatcherTests
             .AddScoped<IRequestDispatcher, RequestDispatcher>()
             .BuildServiceProvider();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            provider.GetRequiredService<IRequestDispatcher>().Send<Ping, string>(new Ping("x")));
+        await FluentActions.Awaiting(() =>
+            provider.GetRequiredService<IRequestDispatcher>().Send<Ping, string>(new Ping("x"))).Should().ThrowAsync<InvalidOperationException>();
     }
 }

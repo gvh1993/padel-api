@@ -1,9 +1,9 @@
+using AwesomeAssertions;
 using Padel.Application.Common;
 using Padel.Application.Features.Members;
 using Padel.Domain.Common;
 using Padel.Domain.Members;
 using Padel.UnitTests.Fakes;
-using TUnit.Assertions.Enums;
 
 namespace Padel.UnitTests.Application.Members;
 
@@ -26,12 +26,12 @@ public class MemberHandlerTests
             CancellationToken.None).ShouldSucceed();
 
         var member = _fixture.Members.Store.Single();
-        await Assert.That(result.Id).IsEqualTo(member.Id);
-        await Assert.That(result.Email).IsEqualTo("gj@example.com");
-        await Assert.That(result.Phone).IsEqualTo("0101234567");
-        await Assert.That(result.RegisteredOn).IsEqualTo(HandlerFixture.Now);
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(1);
-        await Assert.That(_fixture.UnitOfWork.PublishedEvents.Single()).IsTypeOf<MemberRegistered>();
+        result.Id.Should().Be(member.Id);
+        result.Email.Should().Be("gj@example.com");
+        result.Phone.Should().Be("0101234567");
+        result.RegisteredOn.Should().Be(HandlerFixture.Now);
+        _fixture.UnitOfWork.SaveCount.Should().Be(1);
+        _fixture.UnitOfWork.PublishedEvents.Single().Should().BeOfType<MemberRegistered>();
     }
 
     [Test]
@@ -43,9 +43,9 @@ public class MemberHandlerTests
             new RegisterMemberCommand { FirstName = "J", LastName = "J", Email = "JAN@example.com" },
             CancellationToken.None).ShouldFail().Is<ConflictError>();
 
-        await Assert.That(error.Description).Contains("already exists");
-        await Assert.That(_fixture.Members.Store).HasSingleItem();
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
+        error.Description.Should().Contain("already exists");
+        _fixture.Members.Store.Should().ContainSingle();
+        _fixture.UnitOfWork.SaveCount.Should().Be(0);
     }
 
     [Test]
@@ -57,9 +57,9 @@ public class MemberHandlerTests
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Jan", LastName = "Jansen", Email = "jan@example.com" },
             CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.FirstName).IsEqualTo("Jan");
-        await Assert.That(result.Email).IsEqualTo("jan@example.com");
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(1);
+        result.FirstName.Should().Be("Jan");
+        result.Email.Should().Be("jan@example.com");
+        _fixture.UnitOfWork.SaveCount.Should().Be(1);
     }
 
     [Test]
@@ -71,7 +71,7 @@ public class MemberHandlerTests
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Gert", LastName = "De Vries", Email = "gj@example.com" },
             CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.FirstName).IsEqualTo("Gert");
+        result.FirstName.Should().Be("Gert");
     }
 
     [Test]
@@ -103,9 +103,9 @@ public class MemberHandlerTests
 
         var result = await SuspendHandler.Handle(new SuspendMemberCommand(member.Id, "misbehaving"), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(MemberStatus.Suspended);
-        await Assert.That(result.SuspensionReason).IsEqualTo("misbehaving");
-        await Assert.That(_fixture.UnitOfWork.PublishedEvents.Single()).IsTypeOf<MemberSuspended>();
+        result.Status.Should().Be(MemberStatus.Suspended);
+        result.SuspensionReason.Should().Be("misbehaving");
+        _fixture.UnitOfWork.PublishedEvents.Single().Should().BeOfType<MemberSuspended>();
     }
 
     [Test]
@@ -113,7 +113,7 @@ public class MemberHandlerTests
     {
         await SuspendHandler.Handle(new SuspendMemberCommand(Guid.NewGuid(), null), CancellationToken.None).ShouldFail().Is<NotFoundError>();
 
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
+        _fixture.UnitOfWork.SaveCount.Should().Be(0);
     }
 
     [Test]
@@ -125,8 +125,8 @@ public class MemberHandlerTests
 
         var result = await ReactivateHandler.Handle(new ReactivateMemberCommand(member.Id), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(MemberStatus.Active);
-        await Assert.That(_fixture.UnitOfWork.PublishedEvents.Single()).IsTypeOf<MemberReactivated>();
+        result.Status.Should().Be(MemberStatus.Active);
+        _fixture.UnitOfWork.PublishedEvents.Single().Should().BeOfType<MemberReactivated>();
     }
 
     [Test]
@@ -137,7 +137,7 @@ public class MemberHandlerTests
 
         var result = await GetHandler.Handle(new GetMemberQuery(member.Id), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.LastName).IsEqualTo("De Vries");
+        result.LastName.Should().Be("De Vries");
     }
 
     [Test]
@@ -164,7 +164,7 @@ public class MemberHandlerTests
 
         var result = await ListHandler.Handle(new ListMembersQuery(), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items.Select(m => m.FirstName)).IsEquivalentTo(["Bram", "Cees", "Anna"], CollectionOrdering.Matching);
+        result.Items.Select(m => m.FirstName).Should().Equal(new[] { "Bram", "Cees", "Anna" });
     }
 
     [Test]
@@ -175,7 +175,7 @@ public class MemberHandlerTests
 
         var result = await ListHandler.Handle(new ListMembersQuery { Sort = "-email" }, CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items.Select(m => m.Email)).IsEquivalentTo(["b@example.com", "a@example.com"], CollectionOrdering.Matching);
+        result.Items.Select(m => m.Email).Should().Equal(new[] { "b@example.com", "a@example.com" });
     }
 
     [Test]
@@ -190,8 +190,8 @@ public class MemberHandlerTests
             new ListMembersQuery { Status = MemberStatus.Active, Search = "ANNA" },
             CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items).HasSingleItem();
-        await Assert.That(result.Items[0].FirstName).IsEqualTo("Annabel");
+        result.Items.Should().ContainSingle();
+        result.Items[0].FirstName.Should().Be("Annabel");
     }
 
     [Test]
@@ -204,9 +204,9 @@ public class MemberHandlerTests
 
         var result = await ListHandler.Handle(new ListMembersQuery { Page = 2, PageSize = 3, Sort = "firstName" }, CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items.Select(m => m.FirstName)).IsEquivalentTo(["Member3", "Member4"], CollectionOrdering.Matching);
-        await Assert.That(result.TotalCount).IsEqualTo(5);
-        await Assert.That(result.TotalPages).IsEqualTo(2);
-        await Assert.That(result.Page).IsEqualTo(2);
+        result.Items.Select(m => m.FirstName).Should().Equal(new[] { "Member3", "Member4" });
+        result.TotalCount.Should().Be(5);
+        result.TotalPages.Should().Be(2);
+        result.Page.Should().Be(2);
     }
 }

@@ -7,7 +7,10 @@
 
   <ItemGroup>
     <PackageReference Include="NetArchTest.Rules" />
-    <PackageReference Include="TUnit" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
 
   <ItemGroup>

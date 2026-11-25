@@ -1,9 +1,9 @@
+using AwesomeAssertions;
 using Padel.Application.Common;
 using Padel.Application.Features.Courts;
 using Padel.Domain.Common;
 using Padel.Domain.Courts;
 using Padel.UnitTests.Fakes;
-using TUnit.Assertions.Enums;
 
 namespace Padel.UnitTests.Application.Courts;
 
@@ -18,9 +18,9 @@ public class CourtHandlerTests
 
         var result = await handler.Handle(new CreateCourtCommand { Name = "Court A", Surface = "glass" }, CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(CourtStatus.Available);
-        await Assert.That(_fixture.Courts.Store).HasSingleItem();
-        await Assert.That(_fixture.UnitOfWork.PublishedEvents.Single()).IsTypeOf<CourtCreated>();
+        result.Status.Should().Be(CourtStatus.Available);
+        _fixture.Courts.Store.Should().ContainSingle();
+        _fixture.UnitOfWork.PublishedEvents.Single().Should().BeOfType<CourtCreated>();
     }
 
     [Test]
@@ -32,7 +32,7 @@ public class CourtHandlerTests
 
         var error = await handler.Handle(new RenameCourtCommand(court.Id, "Centre"), CancellationToken.None).ShouldFail();
 
-        await Assert.That(error).IsEqualTo(ApplicationErrors.ConcurrentChange);
+        error.Should().Be(ApplicationErrors.ConcurrentChange);
     }
 
     [Test]
@@ -43,8 +43,8 @@ public class CourtHandlerTests
 
         var result = await handler.Handle(new RenameCourtCommand(court.Id, "Centre Court"), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Name).IsEqualTo("Centre Court");
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(1);
+        result.Name.Should().Be("Centre Court");
+        _fixture.UnitOfWork.SaveCount.Should().Be(1);
     }
 
     [Test]
@@ -55,7 +55,7 @@ public class CourtHandlerTests
 
         var result = await handler.Handle(new SetCourtMaintenanceCommand(court.Id, true), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(CourtStatus.Maintenance);
+        result.Status.Should().Be(CourtStatus.Maintenance);
     }
 
     [Test]
@@ -66,7 +66,7 @@ public class CourtHandlerTests
         var handler = new SetCourtMaintenanceCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         await handler.Handle(new SetCourtMaintenanceCommand(court.Id, true), CancellationToken.None).ShouldFail().Is<BusinessRuleError>();
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
+        _fixture.UnitOfWork.SaveCount.Should().Be(0);
     }
 
     [Test]
@@ -77,8 +77,8 @@ public class CourtHandlerTests
 
         var result = await handler.Handle(new RetireCourtCommand(court.Id), CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Status).IsEqualTo(CourtStatus.Retired);
-        await Assert.That(_fixture.UnitOfWork.PublishedEvents.Single()).IsTypeOf<CourtRetired>();
+        result.Status.Should().Be(CourtStatus.Retired);
+        _fixture.UnitOfWork.PublishedEvents.Single().Should().BeOfType<CourtRetired>();
     }
 
     [Test]
@@ -87,7 +87,7 @@ public class CourtHandlerTests
         var handler = new RetireCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         await handler.Handle(new RetireCourtCommand(Guid.NewGuid()), CancellationToken.None).ShouldFail().Is<NotFoundError>();
-        await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
+        _fixture.UnitOfWork.SaveCount.Should().Be(0);
     }
 
     [Test]
@@ -111,7 +111,7 @@ public class CourtHandlerTests
             new ListCourtsQuery { Surface = "GLASS", Status = CourtStatus.Available },
             CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items.Select(c => c.Name)).IsEquivalentTo(["Court A", "Court C"], CollectionOrdering.Matching);
+        result.Items.Select(c => c.Name).Should().Equal(new[] { "Court A", "Court C" });
     }
 
     [Test]
@@ -123,6 +123,6 @@ public class CourtHandlerTests
 
         var result = await handler.Handle(new ListCourtsQuery { Search = "centre" }, CancellationToken.None).ShouldSucceed();
 
-        await Assert.That(result.Items).HasSingleItem();
+        result.Items.Should().ContainSingle();
     }
 }

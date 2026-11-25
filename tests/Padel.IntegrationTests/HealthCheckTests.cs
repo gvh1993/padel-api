@@ -1,4 +1,5 @@
 using System.Net;
+using AwesomeAssertions;
 using Padel.IntegrationTests.Infrastructure;
 
 namespace Padel.IntegrationTests;
@@ -11,8 +12,8 @@ public class HealthCheckTests(PadelApiFactory factory) : IntegrationTestBase(fac
     {
         using var response = await Anonymous.Raw.Get("health/live", "text/plain");
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
-        await Assert.That(await response.Content.ReadAsStringAsync()).IsEqualTo("Healthy");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should().Be("Healthy");
     }
 
     [Test]
@@ -20,8 +21,8 @@ public class HealthCheckTests(PadelApiFactory factory) : IntegrationTestBase(fac
     {
         using var response = await Anonymous.Raw.Get("health/ready", "text/plain");
 
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
-        await Assert.That(await response.Content.ReadAsStringAsync()).IsEqualTo("Healthy");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should().Be("Healthy");
     }
 
     [Test]
@@ -30,6 +31,6 @@ public class HealthCheckTests(PadelApiFactory factory) : IntegrationTestBase(fac
         using var response = await Anonymous.Raw.Get("health", "application/json");
 
         // Not mapped outside Development, so the fallback policy asks for a token.
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Unauthorized);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

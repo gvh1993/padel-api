@@ -1,3 +1,4 @@
+using AwesomeAssertions;
 using Padel.Domain.Common;
 using Padel.Domain.Members;
 
@@ -13,59 +14,59 @@ public class MemberTests
     private static Member CreateMember(string? phone = null) => Register(phone).ShouldSucceed();
 
     [Test]
-    public async Task Register_Should_CreateActiveMemberAndRaiseMemberRegistered()
+    public void Register_Should_CreateActiveMemberAndRaiseMemberRegistered()
     {
         var member = CreateMember();
 
-        await Assert.That(member.Status).IsEqualTo(MemberStatus.Active);
-        await Assert.That(member.CanBook).IsTrue();
-        await Assert.That(member.RegisteredOn).IsEqualTo(RegisteredOn);
+        member.Status.Should().Be(MemberStatus.Active);
+        member.CanBook.Should().BeTrue();
+        member.RegisteredOn.Should().Be(RegisteredOn);
         var registered = (MemberRegistered)member.DomainEvents.Single();
-        await Assert.That(registered.MemberId).IsEqualTo(member.Id);
+        registered.MemberId.Should().Be(member.Id);
     }
 
     [Test]
-    public async Task Register_Should_NormalizePhoneToDigitsOnly()
+    public void Register_Should_NormalizePhoneToDigitsOnly()
     {
         var member = CreateMember("+31 (0)10 123 4567");
 
-        await Assert.That(member.Phone).IsEqualTo("310101234567");
+        member.Phone.Should().Be("310101234567");
     }
 
     [Test]
-    public async Task Given_BlankPhone_Should_StoreNull()
+    public void Given_BlankPhone_Should_StoreNull()
     {
         var member = CreateMember("  ");
 
-        await Assert.That(member.Phone).IsNull();
+        member.Phone.Should().BeNull();
     }
 
     [Test]
     [Arguments("1234567")]
     [Arguments("1234567890123456")]
-    public async Task Given_PhoneWithInvalidDigitCount_Should_Fail(string phone)
+    public void Given_PhoneWithInvalidDigitCount_Should_Fail(string phone)
     {
-        await Register(phone).ShouldFail().Is<ValidationError>();
+        Register(phone).ShouldFail().Is<ValidationError>();
     }
 
     [Test]
-    public async Task Suspend_Should_BlockBookingStoreReasonAndRaiseMemberSuspended()
+    public void Suspend_Should_BlockBookingStoreReasonAndRaiseMemberSuspended()
     {
         var member = CreateMember();
         member.ClearDomainEvents();
 
         member.Suspend("  unpaid fees ");
 
-        await Assert.That(member.Status).IsEqualTo(MemberStatus.Suspended);
-        await Assert.That(member.CanBook).IsFalse();
-        await Assert.That(member.SuspensionReason).IsEqualTo("unpaid fees");
+        member.Status.Should().Be(MemberStatus.Suspended);
+        member.CanBook.Should().BeFalse();
+        member.SuspensionReason.Should().Be("unpaid fees");
         var suspended = (MemberSuspended)member.DomainEvents.Single();
-        await Assert.That(suspended.MemberId).IsEqualTo(member.Id);
-        await Assert.That(suspended.Reason).IsEqualTo("unpaid fees");
+        suspended.MemberId.Should().Be(member.Id);
+        suspended.Reason.Should().Be("unpaid fees");
     }
 
     [Test]
-    public async Task Given_SuspendedMember_Suspend_Should_NotRaiseSecondEvent()
+    public void Given_SuspendedMember_Suspend_Should_NotRaiseSecondEvent()
     {
         var member = CreateMember();
         member.Suspend("first");
@@ -73,12 +74,12 @@ public class MemberTests
 
         member.Suspend("second");
 
-        await Assert.That(member.DomainEvents).IsEmpty();
-        await Assert.That(member.SuspensionReason).IsEqualTo("first");
+        member.DomainEvents.Should().BeEmpty();
+        member.SuspensionReason.Should().Be("first");
     }
 
     [Test]
-    public async Task Given_SuspendedMember_Reactivate_Should_ClearReasonAndRaiseMemberReactivated()
+    public void Given_SuspendedMember_Reactivate_Should_ClearReasonAndRaiseMemberReactivated()
     {
         var member = CreateMember();
         member.Suspend("unpaid fees");
@@ -86,31 +87,31 @@ public class MemberTests
 
         member.Reactivate();
 
-        await Assert.That(member.Status).IsEqualTo(MemberStatus.Active);
-        await Assert.That(member.SuspensionReason).IsNull();
-        await Assert.That(member.DomainEvents.Single()).IsTypeOf<MemberReactivated>();
+        member.Status.Should().Be(MemberStatus.Active);
+        member.SuspensionReason.Should().BeNull();
+        member.DomainEvents.Single().Should().BeOfType<MemberReactivated>();
     }
 
     [Test]
-    public async Task Given_ActiveMember_Reactivate_Should_NotRaiseEvent()
+    public void Given_ActiveMember_Reactivate_Should_NotRaiseEvent()
     {
         var member = CreateMember();
         member.ClearDomainEvents();
 
         member.Reactivate();
 
-        await Assert.That(member.DomainEvents).IsEmpty();
+        member.DomainEvents.Should().BeEmpty();
     }
 
     [Test]
-    public async Task UpdateProfile_Should_ReplaceNameEmailAndPhone()
+    public void UpdateProfile_Should_ReplaceNameEmailAndPhone()
     {
         var member = CreateMember();
 
         member.UpdateProfile(FullName.Create("Jan", "Jansen").ShouldSucceed(), Email.Create("jan@example.com").ShouldSucceed(), "010-1234567");
 
-        await Assert.That(member.Name).IsEqualTo(FullName.Create("Jan", "Jansen").ShouldSucceed());
-        await Assert.That(member.Email).IsEqualTo(Email.Create("jan@example.com").ShouldSucceed());
-        await Assert.That(member.Phone).IsEqualTo("0101234567");
+        member.Name.Should().Be(FullName.Create("Jan", "Jansen").ShouldSucceed());
+        member.Email.Should().Be(Email.Create("jan@example.com").ShouldSucceed());
+        member.Phone.Should().Be("0101234567");
     }
 }
