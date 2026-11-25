@@ -196,6 +196,22 @@ Test names follow `Action_Should_Outcome` and `Given_Context_Action_Should_Outco
 
 Assertions use AwesomeAssertions (`value.Should().Be(expected)`). Results have their own helpers: `result.ShouldSucceed()` returns the value, and `result.ShouldFail().Is<NotFoundError>()` checks the kind of error. Only `TUnit.Engine` is referenced, so TUnit's own assertions are not available and cannot creep back in.
 
+## CI and container images
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every push to `main` and on every pull request:
+
+1. It builds the solution; code style is part of the build.
+2. It checks that the model has no changes without a migration.
+3. It runs all tests, including the integration tests with Testcontainers. The TRX and coverage files are uploaded as artifacts.
+4. It builds both container images.
+
+To build the images locally (Docker required):
+
+```bash
+dotnet publish src/Padel.Api -c Release -t:PublishContainer                # image padel-api
+dotnet publish src/Padel.MigrationService -c Release -t:PublishContainer   # image padel-migrations
+```
+
 ## Migrations
 
 `Padel.MigrationService` applies the migrations, then exits. The API does not migrate on start-up, because several instances would race each other. Locally, Aspire runs the migration service first and starts the API once it has completed. In production, run it as a separate step before rolling out the API, for example as a Kubernetes Job (container image `padel-migrations`).

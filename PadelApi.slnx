@@ -5,6 +5,7 @@
     <File Path="Directory.Packages.props" />
     <File Path="global.json" />
     <File Path="README.md" />
+    <File Path=".github/workflows/ci.yml" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Padel.Api/Padel.Api.csproj" />
