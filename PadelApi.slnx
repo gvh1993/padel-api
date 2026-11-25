@@ -12,6 +12,7 @@
     <Project Path="src/Padel.Application/Padel.Application.csproj" />
     <Project Path="src/Padel.Domain/Padel.Domain.csproj" />
     <Project Path="src/Padel.Infrastructure/Padel.Infrastructure.csproj" />
+    <Project Path="src/Padel.MigrationService/Padel.MigrationService.csproj" />
     <Project Path="src/Padel.ServiceDefaults/Padel.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">

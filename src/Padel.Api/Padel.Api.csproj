@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <UserSecretsId>7d1f2b8e-4c3a-4f5e-9b6d-2a8c1e0f3b47</UserSecretsId>
+    <ContainerRepository>padel-api</ContainerRepository>
   </PropertyGroup>
 
   <ItemGroup>

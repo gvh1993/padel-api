@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Padel.Application.Common.Notifications;
+using Padel.Infrastructure.Persistence;
 using Testcontainers.Keycloak;
 using Testcontainers.PostgreSql;
 using TUnit.Core.Interfaces;
@@ -13,7 +15,7 @@ namespace Padel.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Starts one PostgreSQL container, one Keycloak container (with the realm from the AppHost) and one
-/// API host for the whole test session. The API applies the EF Core migrations on start-up, as in Development.
+/// API host for the whole test session. The database is migrated before the API starts.
 /// </summary>
 public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInitializer
 {
@@ -49,7 +51,12 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
         _keycloakClient = new HttpClient { BaseAddress = new Uri(_keycloak.GetBaseAddress()) };
         Tokens = new KeycloakTokens(_keycloakClient, KeycloakAdminUsername, KeycloakAdminPassword);
 
-        // Accessing the server starts the host, which runs the migrations.
+        // As in production, the schema is migrated before the API starts (here without the migration service).
+        await using (var context = new PadelDbContext(new DbContextOptionsBuilder<PadelDbContext>().UseNpgsql(_database.GetConnectionString()).Options))
+        {
+            await context.Database.MigrateAsync();
+        }
+
         _ = Server;
     }
 
@@ -65,7 +72,6 @@ public sealed class PadelApiFactory : WebApplicationFactory<Program>, IAsyncInit
         builder.UseSetting("ConnectionStrings:padel", _database.GetConnectionString());
         builder.UseSetting("Keycloak:Authority", Tokens.Authority);
         builder.UseSetting("Keycloak:RequireHttpsMetadata", "false");
-        builder.UseSetting("Database:ApplyMigrationsOnStartup", "true");
         builder.UseSetting("OpenApi:Enabled", "true");
         builder.UseSetting("Outbox:PollingInterval", "00:00:00.100");
 

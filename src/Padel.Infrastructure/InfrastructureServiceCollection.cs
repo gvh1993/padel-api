@@ -22,12 +22,10 @@ public static class InfrastructureServiceCollection
     /// <summary>Name of the connection string; the Aspire AppHost provides it as <c>ConnectionStrings__padel</c>.</summary>
     public const string ConnectionStringName = "padel";
 
+    /// <summary>Repositories, unit of work, outbox processing and notifications, on top of <see cref="AddPadelDatabase"/>.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // Resolved lazily so configuration added later (e.g. by integration tests) is picked up.
-        services.AddDbContext<PadelDbContext>(options => options.UseNpgsql(
-            configuration.GetConnectionString(ConnectionStringName)
-            ?? throw new InvalidOperationException($"Connection string '{ConnectionStringName}' is not configured.")));
+        services.AddPadelDatabase(configuration);
 
         services.AddScoped<IMemberRepository, MemberRepository>();
         services.AddScoped<ICourtRepository, CourtRepository>();
@@ -38,6 +36,19 @@ public static class InfrastructureServiceCollection
         services.AddOptions<OutboxOptions>().BindConfiguration(OutboxOptions.SectionName);
         services.AddHostedService<OutboxProcessor>();
         services.TryAddSingleton<INotificationSender, LoggingNotificationSender>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Only the database: the DbContext, its readiness check and its telemetry. Enough for the migration service.
+    /// </summary>
+    public static IServiceCollection AddPadelDatabase(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Resolved lazily so configuration added later (e.g. by integration tests) is picked up.
+        services.AddDbContext<PadelDbContext>(options => options.UseNpgsql(
+            configuration.GetConnectionString(ConnectionStringName)
+            ?? throw new InvalidOperationException($"Connection string '{ConnectionStringName}' is not configured.")));
 
         // "ready" is the readiness tag of the service defaults: no traffic until the database answers.
         services.AddHealthChecks().AddDbContextCheck<PadelDbContext>("database", tags: ["ready"]);

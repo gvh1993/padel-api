@@ -16,9 +16,14 @@ var keycloak = builder.AddKeycloak("keycloak", port: 8080)
     .WithRealmImport("./Realms")
     .WithLifetime(ContainerLifetime.Persistent);
 
+// Migrates the database and exits; the API starts once it completed.
+var migrations = builder.AddDotnetProject("migrations", "../Padel.MigrationService/Padel.MigrationService.csproj")
+    .WithReference(database)
+    .WaitFor(database);
+
 builder.AddDotnetProject("api", "../Padel.Api/Padel.Api.csproj")
     .WithReference(database)
-    .WaitFor(database)
+    .WaitForCompletion(migrations)
     .WaitFor(keycloak)
     .WithEnvironment("Keycloak__Authority", ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/realms/padel"))
     .WithHttpHealthCheck("/health/ready")

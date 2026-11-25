@@ -17,7 +17,7 @@ API for a padel club: members, courts and bookings.
 dotnet run --project src/Padel.AppHost     # or: aspire run
 ```
 
-The Aspire AppHost starts PostgreSQL, Keycloak (realm `padel`) and the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
+The Aspire AppHost starts PostgreSQL and Keycloak (realm `padel`), runs the migration service and then starts the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
 
 | What | Where |
 | --- | --- |
@@ -47,6 +47,7 @@ The users and the password grant on `padel-scalar` are for development only.
 | `Padel.Infrastructure` | EF Core and PostgreSQL, repositories and the unit of work. It owns the database's telemetry (Npgsql, the application's spans) and the database readiness check. |
 | `Padel.Api` | Minimal API endpoints per feature, Keycloak JWT authentication, RFC 9457 problem details, and OpenAPI with Scalar. |
 | `Padel.ServiceDefaults` | Cross-cutting service defaults: OpenTelemetry export, health endpoints, service discovery and HTTP resilience. |
+| `Padel.MigrationService` | Applies the EF Core migrations, then exits. The API never migrates on start-up. |
 | `Padel.AppHost` | The Aspire app model for local development. |
 
 Code is organised by feature (vertical slices). Every use case has its own folder in each layer, and the API follows the REPR pattern: every endpoint has its own folder with its request, the endpoint and its response.
@@ -197,9 +198,17 @@ Assertions use AwesomeAssertions (`value.Should().Be(expected)`). Results have t
 
 ## Migrations
 
+`Padel.MigrationService` applies the migrations, then exits. The API does not migrate on start-up, because several instances would race each other. Locally, Aspire runs the migration service first and starts the API once it has completed. In production, run it as a separate step before rolling out the API, for example as a Kubernetes Job (container image `padel-migrations`).
+
+To add a migration:
+
 ```bash
 dotnet tool restore
-dotnet ef migrations add <Name> --project src/Padel.Infrastructure --output-dir Persistence/Migrations
+dotnet ef migrations add <Name> --project src/Padel.Infrastructure --output-dir Persistence/Migrations --namespace Padel.Infrastructure.Persistence.Migrations
 ```
 
-The exclusion constraint and the unique index are written as SQL in `InitialCreate`, because EF Core cannot model them.
+EF Core cannot model some objects, so the migrations create them with SQL:
+
+- the exclusion constraints (no overlapping bookings per court or per member);
+- the unique email index;
+- the trigram search indexes.

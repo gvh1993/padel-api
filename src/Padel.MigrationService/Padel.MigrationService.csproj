@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <ContainerRepository>padel-migrations</ContainerRepository>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Padel.Infrastructure\Padel.Infrastructure.csproj" />
+    <ProjectReference Include="..\Padel.ServiceDefaults\Padel.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

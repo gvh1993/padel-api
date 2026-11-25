@@ -64,10 +64,6 @@ if (app.Configuration.GetValue<bool>("OpenApi:Enabled"))
 
 app.MapEndpoints();
 
-if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
-{
-    await app.Services.MigrateDatabaseAsync();
-}
 
 await app.RunAsync();
 
