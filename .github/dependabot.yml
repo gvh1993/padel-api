@@ -1,0 +1,28 @@
+# Weekly update pull requests for NuGet packages (Directory.Packages.props) and the pinned GitHub Actions.
+# Related packages are grouped, so one pull request updates them together.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      aspire:
+        patterns: ["Aspire.*"]
+      asp-versioning:
+        patterns: ["Asp.Versioning.*"]
+      dotnet:
+        patterns: ["Microsoft.AspNetCore.*", "Microsoft.EntityFrameworkCore.*", "Microsoft.Extensions.*", "Npgsql*"]
+      opentelemetry:
+        patterns: ["OpenTelemetry.*"]
+      testing:
+        patterns: ["TUnit*", "Microsoft.Testing.*", "Testcontainers*", "AwesomeAssertions", "Soenneker.*", "Refit", "NetArchTest.*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

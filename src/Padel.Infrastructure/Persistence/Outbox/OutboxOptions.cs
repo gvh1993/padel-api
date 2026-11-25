@@ -12,4 +12,13 @@ public sealed class OutboxOptions
 
     /// <summary>After this many failed attempts a message is no longer retried (see <c>LastError</c>).</summary>
     public int MaxAttempts { get; set; } = 5;
+
+    /// <summary>
+    /// How long handled messages are kept (for troubleshooting) before <see cref="OutboxCleaner"/> deletes them.
+    /// Messages that failed <see cref="MaxAttempts"/> times are kept until someone looks at them.
+    /// </summary>
+    public TimeSpan Retention { get; set; } = TimeSpan.FromDays(7);
+
+    /// <summary>How often the cleaner deletes handled messages older than <see cref="Retention"/>.</summary>
+    public TimeSpan CleanupInterval { get; set; } = TimeSpan.FromHours(1);
 }

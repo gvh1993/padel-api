@@ -35,6 +35,7 @@ public static class InfrastructureServiceCollection
         // Domain events are stored with the change and handled after the commit.
         services.AddOptions<OutboxOptions>().BindConfiguration(OutboxOptions.SectionName);
         services.AddHostedService<OutboxProcessor>();
+        services.AddHostedService<OutboxCleaner>();
         services.TryAddSingleton<INotificationSender, LoggingNotificationSender>();
 
         return services;

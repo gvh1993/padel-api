@@ -10,6 +10,7 @@
     <PackageReference Include="Refit" />
     <PackageReference Include="Testcontainers.Keycloak" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.Redis" />
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="Soenneker.Utils.AutoBogus" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />

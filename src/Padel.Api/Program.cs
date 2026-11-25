@@ -31,6 +31,14 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
 builder.Services.AddPadelAuthentication();
+builder.Services.AddPadelForwardedHeaders();
+
+// Rate-limit counters in Redis when there is one (the Aspire AppHost adds it), otherwise per instance in memory.
+if (builder.Configuration.GetConnectionString(RateLimiting.RedisConnectionName) is not null)
+{
+    builder.AddRedisClient(RateLimiting.RedisConnectionName);
+}
+
 builder.Services.AddPadelRateLimiting();
 builder.Services.AddPadelApiVersioning();
 
@@ -41,6 +49,8 @@ foreach (var version in ApiVersioning.Versions)
 
 var app = builder.Build();
 
+// First, so everything after it (logging, rate limiting, links) sees the client's address and scheme.
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 

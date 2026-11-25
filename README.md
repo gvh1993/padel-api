@@ -2,8 +2,8 @@
 
 API for a padel club: members, courts and bookings.
 
-**Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
-**Tests:** TUnit (engine only) with AwesomeAssertions and AutoBogus builders. The integration tests use Testcontainers (PostgreSQL and Keycloak) and Refit; the architecture tests use NetArchTest.
+**Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Redis (rate limits), Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
+**Tests:** TUnit (engine only) with AwesomeAssertions and AutoBogus builders. The integration tests use Testcontainers (PostgreSQL, Redis and Keycloak) and Refit; the architecture tests use NetArchTest.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ API for a padel club: members, courts and bookings.
 dotnet run --project src/Padel.AppHost     # or: aspire run
 ```
 
-The Aspire AppHost starts PostgreSQL and Keycloak (realm `padel`), runs the migration service and then starts the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
+The Aspire AppHost starts PostgreSQL, Redis and Keycloak (realm `padel`), runs the migration service and then starts the API. It opens the Aspire dashboard, which shows the resources, their health, logs, traces and metrics.
 
 | What | Where |
 | --- | --- |
@@ -88,6 +88,8 @@ Endpoints implement `IEndpoint` and are mapped automatically at start-up. Reques
 Aggregates raise domain events, such as `BookingCreated` and `BookingCancelled`. The unit of work stores them in the `OutboxMessages` table in the same transaction as the change, so either both are saved or neither is.
 
 The `OutboxProcessor` (a background service) then hands them to their handlers after the commit. Several instances can run at once because batches are locked with `FOR UPDATE SKIP LOCKED`. A failing handler is retried, up to `Outbox:MaxAttempts` times; the error is kept in `LastError`.
+
+The `OutboxCleaner` deletes handled messages once they are older than `Outbox:Retention` (default 7 days), every `Outbox:CleanupInterval` (default 1 hour). Messages that failed `Outbox:MaxAttempts` times are kept, so someone can look at them.
 
 The booking handlers send a confirmation and a cancellation notice to the member, with the time in the club's time zone. `LoggingNotificationSender` only writes them to the log. Replace it with a real email sender once the club has one.
 
@@ -194,6 +196,19 @@ Each caller has request limits per minute: the account (`sub`) when signed in, o
 
 A caller over the limit gets a **429** problem with a `Retry-After` header. Health checks and the documentation are not limited.
 
+The counters are kept in Redis when the connection string `ConnectionStrings:redis` is set (Aspire sets it), so the limits hold across all API instances. Without it, each instance counts on its own, which is fine for a single instance. When Redis cannot be reached, requests are let through without a limit and a warning is logged: an unavailable rate-limit store should not take the API down. Set `RateLimiting:KeyPrefix` (default `padel`) when several apps or environments share one Redis.
+
+## Behind a reverse proxy
+
+Behind a reverse proxy or ingress, the API takes the client's address and scheme from `X-Forwarded-For` and `X-Forwarded-Proto`. It uses them for logs, rate limiting and the links it returns (`Location`). It only trusts these headers from localhost and from the proxies you configure:
+
+| Setting | Example |
+| --- | --- |
+| `ForwardedHeaders:KnownProxies` | `["10.0.0.5"]` (IP addresses) |
+| `ForwardedHeaders:KnownNetworks` | `["10.0.0.0/8"]` (CIDR, for example the cluster network) |
+
+Headers from any other address are ignored, so clients cannot fake their address.
+
 ## Health checks
 
 These endpoints need no token.
@@ -216,7 +231,7 @@ dotnet test
 | --- | --- |
 | `Padel.UnitTests` | Domain and Application, using in-memory fakes. |
 | `Padel.ArchitectureTests` | Layer dependencies, vertical slices and naming conventions. |
-| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
+| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL, Redis and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
 
 Test names follow `Action_GivenState_ShouldOutcome` (existing data or the caller) or `Action_WhenInput_ShouldOutcome` (what the action receives), for example `CreateBooking_GivenSuspendedMember_ShouldReturn422` and `CreateBooking_WhenSlotInThePast_ShouldReturn422`. Tests without a scenario are named `Action_ShouldOutcome`.
 
@@ -239,6 +254,8 @@ Set only the values the test depends on; the rest is random. The unit tests have
 2. It checks that the model has no changes without a migration.
 3. It runs all tests, including the integration tests with Testcontainers. The TRX and coverage files are uploaded as artifacts.
 4. It builds both container images.
+
+The actions are pinned to a commit SHA, with the version in a comment, and the NuGet packages are cached. [Dependabot](.github/dependabot.yml) opens weekly pull requests for NuGet packages (grouped, for example all of Aspire together) and for the actions.
 
 To build the images locally (Docker required):
 
