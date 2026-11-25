@@ -1,8 +1,7 @@
 using AwesomeAssertions;
 using Padel.Domain.Bookings;
 using Padel.Domain.Common;
-using Padel.Domain.Courts;
-using Padel.Domain.Members;
+using Padel.UnitTests.Builders;
 
 namespace Padel.UnitTests.Domain.Bookings;
 
@@ -12,14 +11,8 @@ namespace Padel.UnitTests.Domain.Bookings;
 /// </summary>
 public class BookingRulesTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 11, 25, 9, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Now = TestData.Now;
     private static readonly BookingPolicy Policy = new();
-
-    private static Member CreateMember() =>
-        Member.Register(FullName.Create("Gert-Jan", "De Vries").ShouldSucceed(), Email.Create("gj@example.com").ShouldSucceed(), null, Now)
-            .ShouldSucceed();
-
-    private static Court CreateCourt() => Court.Create("Court A", "glass").ShouldSucceed();
 
     /// <summary>A slot on 26 November 2026, given in Amsterdam time (UTC+1).</summary>
     private static TimeSlot WinterSlot(int hour, int minute, int minutes = 60)
@@ -29,7 +22,7 @@ public class BookingRulesTests
     }
 
     private static Result<Booking> Book(TimeSlot slot, int upcomingBookings = 0) =>
-        Booking.Create(CreateMember(), CreateCourt(), slot, Now, Policy, upcomingBookings);
+        Booking.Create(MemberBuilder.New().Generate(), CourtBuilder.New().Generate(), slot, Now, Policy, upcomingBookings);
 
     [Test]
     [Arguments(7, 0)]
@@ -86,9 +79,9 @@ public class BookingRulesTests
     public void Create_Should_StoreTheIdempotencyKey()
     {
         var slot = WinterSlot(10, 0);
-        var court = CreateCourt();
+        var court = CourtBuilder.New().Generate();
 
-        var booking = Booking.Create(CreateMember(), court, slot, Now, Policy, 0, "key-1").ShouldSucceed();
+        var booking = Booking.Create(MemberBuilder.New().Generate(), court, slot, Now, Policy, 0, "key-1").ShouldSucceed();
 
         booking.IdempotencyKey.Should().Be("key-1");
         booking.IsFor(court.Id, slot).Should().BeTrue();

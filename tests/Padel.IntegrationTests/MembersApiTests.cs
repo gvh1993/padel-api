@@ -2,6 +2,7 @@ using System.Net;
 using AwesomeAssertions;
 using Padel.Api.Features.Members;
 using Padel.Domain.Members;
+using Padel.IntegrationTests.Builders;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
 
@@ -15,13 +16,11 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var email = UniqueEmail("Gert-Jan");
 
-        var response = await Admin.Members.Register(new RegisterMemberRequest
-        {
-            FirstName = " Gert-Jan ",
-            LastName = "De Vries",
-            Email = email.ToUpperInvariant(),
-            Phone = "+31 (0)10 123 4567",
-        });
+        var response = await Admin.Members.Register(RegisterMemberRequestBuilder.New()
+            .WithName(" Gert-Jan ", "De Vries")
+            .WithEmail(email.ToUpperInvariant())
+            .WithPhone("+31 (0)10 123 4567")
+            .Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var member = response.Value();
@@ -37,12 +36,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var existing = await RegisterMemberAsync();
 
-        var response = await Admin.Members.Register(new RegisterMemberRequest
-        {
-            FirstName = "Other",
-            LastName = "Person",
-            Email = existing.Email.ToUpperInvariant(),
-        });
+        var response = await Admin.Members.Register(RegisterMemberRequestBuilder.New().WithEmail(existing.Email.ToUpperInvariant()).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var problem = await response.ReadProblemAsync();
@@ -55,12 +49,8 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var email = UniqueEmail("race");
 
-        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Admin.Members.Register(new RegisterMemberRequest
-        {
-            FirstName = $"Racer{i}",
-            LastName = "Test",
-            Email = email,
-        })));
+        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
+            Admin.Members.Register(RegisterMemberRequestBuilder.New().WithEmail(email).Generate())));
 
         var statusCodes = responses.Select(r => r.StatusCode).ToList();
         statusCodes.Count(s => s == HttpStatusCode.Created).Should().Be(1);
@@ -70,13 +60,11 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     [Test]
     public async Task Given_InvalidFields_RegisterMember_Should_Return400WithErrorsPerField()
     {
-        var response = await Admin.Members.Register(new RegisterMemberRequest
-        {
-            FirstName = "",
-            LastName = "Jansen",
-            Email = "not-an-email",
-            Phone = "12",
-        });
+        var response = await Admin.Members.Register(RegisterMemberRequestBuilder.New()
+            .WithName("", "Jansen")
+            .WithEmail("not-an-email")
+            .WithPhone("12")
+            .Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var problem = await response.ReadProblemAsync();
@@ -155,9 +143,9 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     public async Task Given_SearchSortAndPaging_ListMembers_Should_ReturnFilteredSortedPage()
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
-        await RegisterMemberAsync("Anna", $"Visser{tag}");
-        await RegisterMemberAsync("Bram", $"Bakker{tag}");
-        await RegisterMemberAsync("Cees", $"Jansen{tag}");
+        await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Anna", $"Visser{tag}"));
+        await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Bram", $"Bakker{tag}"));
+        await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Cees", $"Jansen{tag}"));
 
         var response = await Admin.Members.List(new MemberListParameters
         {
@@ -177,8 +165,8 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     public async Task Given_StatusFilter_ListMembers_Should_ReturnOnlyThatStatus()
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
-        var suspended = await RegisterMemberAsync("Suspended", tag);
-        await RegisterMemberAsync("Active", tag);
+        var suspended = await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Suspended", tag));
+        await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Active", tag));
         await Admin.Members.Suspend(suspended.Id, new SuspendMemberRequest());
 
         var page = (await Admin.Members.List(new MemberListParameters { Search = tag, Status = MemberStatus.Suspended })).Value();

@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Padel.Application.Features.Bookings.Notifications;
 using Padel.Domain.Bookings;
+using Padel.UnitTests.Builders;
 using Padel.UnitTests.Fakes;
 
 namespace Padel.UnitTests.Application.Bookings;
@@ -19,9 +20,9 @@ public class BookingNotificationTests
     [Test]
     public async Task Given_BookingCreated_SendBookingConfirmation_Should_MailTheMemberInClubTime()
     {
-        var member = _fixture.AddMember("jan@example.com");
-        var court = _fixture.AddCourt("Centre Court");
-        var booking = _fixture.AddBooking(member, court, Tomorrow10);
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
+        var court = _fixture.Add(CourtBuilder.New().WithName("Centre Court"));
+        var booking = _fixture.Add(BookingBuilder.New().For(member).On(court).StartingAt(Tomorrow10));
 
         await new SendBookingConfirmation(Notifications).Handle(new BookingCreated(booking.Id, member.Id, court.Id), CancellationToken.None);
 
@@ -34,8 +35,8 @@ public class BookingNotificationTests
     [Test]
     public async Task Given_BookingCancelled_SendBookingCancellation_Should_MailTheMember()
     {
-        var member = _fixture.AddMember("jan@example.com");
-        var booking = _fixture.AddBooking(member, _fixture.AddCourt(), Tomorrow10);
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
+        var booking = _fixture.Add(BookingBuilder.New().For(member).On(_fixture.Add(CourtBuilder.New())).StartingAt(Tomorrow10));
 
         await new SendBookingCancellation(Notifications).Handle(new BookingCancelled(booking.Id, "rain"), CancellationToken.None);
 

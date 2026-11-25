@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Padel.Application.Features.Members;
 using Padel.Domain.Members;
+using Padel.UnitTests.Builders;
 using Padel.UnitTests.Fakes;
 
 namespace Padel.UnitTests.Application.Members;
@@ -14,7 +15,7 @@ public class MemberIdentityResolverTests
     [Test]
     public async Task Given_VerifiedEmailOfAnUnlinkedMember_Resolve_Should_LinkTheAccount()
     {
-        var member = _fixture.AddMember("jan@example.com");
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
         var memberId = await Resolver.ResolveAsync("account-1", "JAN@example.com");
 
@@ -26,8 +27,7 @@ public class MemberIdentityResolverTests
     [Test]
     public async Task Given_LinkedAccount_Resolve_Should_FindTheMemberWithoutEmail()
     {
-        var member = _fixture.AddMember("jan@example.com");
-        member.LinkIdentity("account-1").ShouldSucceed();
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com").LinkedTo("account-1"));
 
         var memberId = await Resolver.ResolveAsync("account-1", verifiedEmail: null);
 
@@ -38,7 +38,7 @@ public class MemberIdentityResolverTests
     [Test]
     public async Task Given_NoVerifiedEmail_Resolve_Should_NotLink()
     {
-        var member = _fixture.AddMember("jan@example.com");
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
         var memberId = await Resolver.ResolveAsync("account-1", verifiedEmail: null);
 
@@ -49,8 +49,7 @@ public class MemberIdentityResolverTests
     [Test]
     public async Task Given_EmailOfAMemberLinkedToAnotherAccount_Resolve_Should_NotTakeItOver()
     {
-        var member = _fixture.AddMember("jan@example.com");
-        member.LinkIdentity("account-1").ShouldSucceed();
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com").LinkedTo("account-1"));
 
         var memberId = await Resolver.ResolveAsync("account-2", "jan@example.com");
 
@@ -61,7 +60,7 @@ public class MemberIdentityResolverTests
     [Test]
     public async Task Given_UnknownEmail_Resolve_Should_ReturnNull()
     {
-        _fixture.AddMember("jan@example.com");
+        _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
         (await Resolver.ResolveAsync("account-1", "piet@example.com")).Should().BeNull();
     }

@@ -1,6 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
-using Padel.Api.Features.Members;
+using Padel.IntegrationTests.Builders;
 using Padel.IntegrationTests.Infrastructure;
 
 namespace Padel.IntegrationTests;
@@ -29,12 +29,7 @@ public class AuthenticationTests(PadelApiFactory factory) : IntegrationTestBase(
     {
         var member = await RegisterMemberAsync();
 
-        var response = await As(member).Members.Register(new RegisterMemberRequest
-        {
-            FirstName = "Sneaky",
-            LastName = "Member",
-            Email = UniqueEmail(),
-        });
+        var response = await As(member).Members.Register(RegisterMemberRequestBuilder.New().Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

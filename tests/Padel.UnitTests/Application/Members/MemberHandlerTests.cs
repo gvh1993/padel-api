@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using Padel.Application.Features.Members;
 using Padel.Domain.Common;
 using Padel.Domain.Members;
+using Padel.UnitTests.Builders;
 using Padel.UnitTests.Fakes;
 
 namespace Padel.UnitTests.Application.Members;
@@ -36,7 +37,7 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_EmailAlreadyInUse_RegisterMember_Should_FailWithConflict()
     {
-        _fixture.AddMember("jan@example.com");
+        _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
         var error = await RegisterHandler.Handle(
             new RegisterMemberCommand { FirstName = "J", LastName = "J", Email = "JAN@example.com" },
@@ -50,7 +51,7 @@ public class MemberHandlerTests
     [Test]
     public async Task UpdateMemberProfile_Should_ReplaceProfileAndSave()
     {
-        var member = _fixture.AddMember();
+        var member = _fixture.Add(MemberBuilder.New());
 
         var result = await UpdateHandler.Handle(
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Jan", LastName = "Jansen", Email = "jan@example.com" },
@@ -64,7 +65,7 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_UnchangedEmail_UpdateMemberProfile_Should_NotReportConflict()
     {
-        var member = _fixture.AddMember("gj@example.com");
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("gj@example.com"));
 
         var result = await UpdateHandler.Handle(
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Gert", LastName = "De Vries", Email = "gj@example.com" },
@@ -76,8 +77,8 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_EmailOfAnotherMember_UpdateMemberProfile_Should_FailWithConflict()
     {
-        var member = _fixture.AddMember("gj@example.com");
-        _fixture.AddMember("jan@example.com");
+        var member = _fixture.Add(MemberBuilder.New().WithEmail("gj@example.com"));
+        _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
         await UpdateHandler.Handle(
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Gert", LastName = "De Vries", Email = "jan@example.com" },
@@ -87,7 +88,7 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_CallerIsAnotherMember_UpdateMemberProfile_Should_FailWithForbidden()
     {
-        var member = _fixture.AddMember();
+        var member = _fixture.Add(MemberBuilder.New());
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
 
         await UpdateHandler.Handle(
@@ -98,7 +99,7 @@ public class MemberHandlerTests
     [Test]
     public async Task SuspendMember_Should_SuspendWithReasonAndRaiseMemberSuspended()
     {
-        var member = _fixture.AddMember();
+        var member = _fixture.Add(MemberBuilder.New());
 
         var result = await SuspendHandler.Handle(new SuspendMemberCommand(member.Id, "misbehaving"), CancellationToken.None).ShouldSucceed();
 
@@ -118,9 +119,7 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_SuspendedMember_ReactivateMember_Should_ReactivateAndRaiseMemberReactivated()
     {
-        var member = _fixture.AddMember();
-        member.Suspend();
-        member.ClearDomainEvents();
+        var member = _fixture.Add(MemberBuilder.New().Suspended());
 
         var result = await ReactivateHandler.Handle(new ReactivateMemberCommand(member.Id), CancellationToken.None).ShouldSucceed();
 
@@ -131,18 +130,18 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_CallerIsTheMember_GetMember_Should_ReturnMember()
     {
-        var member = _fixture.AddMember();
+        var member = _fixture.Add(MemberBuilder.New());
         _fixture.CurrentUser = FakeCurrentUser.ForMember(member.Id);
 
         var result = await GetHandler.Handle(new GetMemberQuery(member.Id), CancellationToken.None).ShouldSucceed();
 
-        result.LastName.Should().Be("De Vries");
+        result.LastName.Should().Be(member.Name.Last);
     }
 
     [Test]
     public async Task Given_CallerIsAnotherMember_GetMember_Should_FailWithForbidden()
     {
-        var member = _fixture.AddMember();
+        var member = _fixture.Add(MemberBuilder.New());
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
 
         await GetHandler.Handle(new GetMemberQuery(member.Id), CancellationToken.None).ShouldFail().Is<ForbiddenError>();
@@ -157,9 +156,9 @@ public class MemberHandlerTests
     [Test]
     public async Task ListMembers_Should_SortByLastNameThenFirstNameByDefault()
     {
-        _fixture.AddMember("c@example.com", "Cees", "Bakker");
-        _fixture.AddMember("a@example.com", "Anna", "Visser");
-        _fixture.AddMember("b@example.com", "Bram", "Bakker");
+        _fixture.Add(MemberBuilder.New().WithEmail("c@example.com").WithName("Cees", "Bakker"));
+        _fixture.Add(MemberBuilder.New().WithEmail("a@example.com").WithName("Anna", "Visser"));
+        _fixture.Add(MemberBuilder.New().WithEmail("b@example.com").WithName("Bram", "Bakker"));
 
         var result = await ListHandler.Handle(new ListMembersQuery(), CancellationToken.None).ShouldSucceed();
 
@@ -169,8 +168,8 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_DescendingSort_ListMembers_Should_ReverseOrder()
     {
-        _fixture.AddMember("a@example.com", "Anna", "Visser");
-        _fixture.AddMember("b@example.com", "Bram", "Bakker");
+        _fixture.Add(MemberBuilder.New().WithEmail("a@example.com").WithName("Anna", "Visser"));
+        _fixture.Add(MemberBuilder.New().WithEmail("b@example.com").WithName("Bram", "Bakker"));
 
         var result = await ListHandler.Handle(new ListMembersQuery { Sort = "-email" }, CancellationToken.None).ShouldSucceed();
 
@@ -180,10 +179,9 @@ public class MemberHandlerTests
     [Test]
     public async Task Given_StatusAndSearchFilters_ListMembers_Should_ReturnOnlyMatches()
     {
-        var suspended = _fixture.AddMember("anna@example.com", "Anna", "Visser");
-        suspended.Suspend();
-        _fixture.AddMember("annabel@example.com", "Annabel", "Bakker");
-        _fixture.AddMember("bram@example.com", "Bram", "Visser");
+        var suspended = _fixture.Add(MemberBuilder.New().WithEmail("anna@example.com").WithName("Anna", "Visser").Suspended());
+        _fixture.Add(MemberBuilder.New().WithEmail("annabel@example.com").WithName("Annabel", "Bakker"));
+        _fixture.Add(MemberBuilder.New().WithEmail("bram@example.com").WithName("Bram", "Visser"));
 
         var result = await ListHandler.Handle(
             new ListMembersQuery { Status = MemberStatus.Active, Search = "ANNA" },
@@ -198,7 +196,7 @@ public class MemberHandlerTests
     {
         for (var i = 0; i < 5; i++)
         {
-            _fixture.AddMember($"m{i}@example.com", $"Member{i}", "Test");
+            _fixture.Add(MemberBuilder.New().WithEmail($"m{i}@example.com").WithName($"Member{i}", "Test"));
         }
 
         var result = await ListHandler.Handle(new ListMembersQuery { Page = 2, PageSize = 3, Sort = "firstName" }, CancellationToken.None).ShouldSucceed();

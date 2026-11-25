@@ -3,7 +3,7 @@
 API for a padel club: members, courts and bookings.
 
 **Stack:** .NET 11, ASP.NET Core minimal APIs, EF Core 11 with PostgreSQL, Keycloak, FluentValidation, OpenTelemetry, Scalar, Aspire.
-**Tests:** TUnit (engine only) with AwesomeAssertions. The integration tests use Testcontainers (PostgreSQL and Keycloak) and Refit; the architecture tests use NetArchTest.
+**Tests:** TUnit (engine only) with AwesomeAssertions and AutoBogus builders. The integration tests use Testcontainers (PostgreSQL and Keycloak) and Refit; the architecture tests use NetArchTest.
 
 ## Requirements
 
@@ -212,6 +212,15 @@ dotnet test
 Test names follow `Action_Should_Outcome` and `Given_Context_Action_Should_Outcome`.
 
 Assertions use AwesomeAssertions (`value.Should().Be(expected)`). Results have their own helpers: `result.ShouldSucceed()` returns the value, and `result.ShouldFail().Is<NotFoundError>()` checks the kind of error. Only `TUnit.Engine` is referenced, so TUnit's own assertions are not available and cannot creep back in.
+
+Test data comes from builders based on AutoFaker ([Soenneker.Utils.AutoBogus](https://github.com/soenneker/soenneker.utils.autobogus)). A builder's `New()` returns a `Faker<T>` with valid random values, and its extension methods override one rule each:
+
+```csharp
+var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com").Suspended());
+var request = CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(start).Generate();
+```
+
+Set only the values the test depends on; the rest is random. The unit tests have builders for the entities (`MemberBuilder`, `CourtBuilder`, `BookingBuilder`). These create the entity through its domain factory, then set every property with a rule, because AutoFaker would otherwise fill private setters with random values. The builders produce a given state directly. Tests of the domain rules themselves call the factories (`Booking.Create`, `Member.Register`). The integration tests have builders for the API requests.
 
 ## CI and container images
 

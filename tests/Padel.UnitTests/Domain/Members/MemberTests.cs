@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Padel.Domain.Common;
 using Padel.Domain.Members;
+using Padel.UnitTests.Builders;
 
 namespace Padel.UnitTests.Domain.Members;
 
@@ -8,15 +9,14 @@ public class MemberTests
 {
     private static readonly DateTimeOffset RegisteredOn = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
 
+    // Tests of the registration itself call the factory; the others start from a generated member.
     private static Result<Member> Register(string? phone = null) =>
         Member.Register(FullName.Create("Gert-Jan", "De Vries").ShouldSucceed(), Email.Create("gertjan@example.com").ShouldSucceed(), phone, RegisteredOn);
-
-    private static Member CreateMember(string? phone = null) => Register(phone).ShouldSucceed();
 
     [Test]
     public void Register_Should_CreateActiveMemberAndRaiseMemberRegistered()
     {
-        var member = CreateMember();
+        var member = Register().ShouldSucceed();
 
         member.Status.Should().Be(MemberStatus.Active);
         member.CanBook.Should().BeTrue();
@@ -28,7 +28,7 @@ public class MemberTests
     [Test]
     public void Register_Should_NormalizePhoneToDigitsOnly()
     {
-        var member = CreateMember("+31 (0)10 123 4567");
+        var member = Register("+31 (0)10 123 4567").ShouldSucceed();
 
         member.Phone.Should().Be("310101234567");
     }
@@ -36,7 +36,7 @@ public class MemberTests
     [Test]
     public void Given_BlankPhone_Should_StoreNull()
     {
-        var member = CreateMember("  ");
+        var member = Register("  ").ShouldSucceed();
 
         member.Phone.Should().BeNull();
     }
@@ -52,7 +52,7 @@ public class MemberTests
     [Test]
     public void LinkIdentity_Should_LinkOnceAndAllowTheSameAccountAgain()
     {
-        var member = CreateMember();
+        var member = MemberBuilder.New().Generate();
 
         member.LinkIdentity("account-1").ShouldSucceed();
         member.LinkIdentity("account-1").ShouldSucceed();
@@ -81,8 +81,7 @@ public class MemberTests
     [Test]
     public void Suspend_Should_BlockBookingStoreReasonAndRaiseMemberSuspended()
     {
-        var member = CreateMember();
-        member.ClearDomainEvents();
+        var member = MemberBuilder.New().Generate();
 
         member.Suspend("  unpaid fees ");
 
@@ -97,9 +96,7 @@ public class MemberTests
     [Test]
     public void Given_SuspendedMember_Suspend_Should_NotRaiseSecondEvent()
     {
-        var member = CreateMember();
-        member.Suspend("first");
-        member.ClearDomainEvents();
+        var member = MemberBuilder.New().Suspended("first").Generate();
 
         member.Suspend("second");
 
@@ -110,9 +107,7 @@ public class MemberTests
     [Test]
     public void Given_SuspendedMember_Reactivate_Should_ClearReasonAndRaiseMemberReactivated()
     {
-        var member = CreateMember();
-        member.Suspend("unpaid fees");
-        member.ClearDomainEvents();
+        var member = MemberBuilder.New().Suspended("unpaid fees").Generate();
 
         member.Reactivate();
 
@@ -124,8 +119,7 @@ public class MemberTests
     [Test]
     public void Given_ActiveMember_Reactivate_Should_NotRaiseEvent()
     {
-        var member = CreateMember();
-        member.ClearDomainEvents();
+        var member = MemberBuilder.New().Generate();
 
         member.Reactivate();
 
@@ -135,7 +129,7 @@ public class MemberTests
     [Test]
     public void UpdateProfile_Should_ReplaceNameEmailAndPhone()
     {
-        var member = CreateMember();
+        var member = MemberBuilder.New().Generate();
 
         member.UpdateProfile(FullName.Create("Jan", "Jansen").ShouldSucceed(), Email.Create("jan@example.com").ShouldSucceed(), "010-1234567");
 

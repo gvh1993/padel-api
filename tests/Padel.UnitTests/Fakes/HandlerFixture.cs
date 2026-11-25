@@ -1,18 +1,20 @@
+using Bogus;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Padel.Domain.Bookings;
-using Padel.Domain.Common;
 using Padel.Domain.Courts;
 using Padel.Domain.Members;
+using Padel.UnitTests.Builders;
 
 namespace Padel.UnitTests.Fakes;
 
 /// <summary>
 /// Repositories, unit of work, clock and caller for handler tests. Acts as admin unless changed.
+/// Put test data in the repositories with <c>Add(MemberBuilder.New()...)</c>.
 /// </summary>
 public sealed class HandlerFixture
 {
-    public static readonly DateTimeOffset Now = new(2026, 11, 25, 9, 0, 0, TimeSpan.Zero);
+    public static readonly DateTimeOffset Now = TestData.Now;
 
     public HandlerFixture()
     {
@@ -31,27 +33,23 @@ public sealed class HandlerFixture
 
     public IOptions<BookingPolicy> PolicyOptions => Options.Create(Policy);
 
-    public Member AddMember(string email = "gj@example.com", string firstName = "Gert-Jan", string lastName = "De Vries")
+    public Member Add(Faker<Member> builder)
     {
-        var member = Member.Register(FullName.Create(firstName, lastName).ShouldSucceed(), Email.Create(email).ShouldSucceed(), null, Now.AddDays(-30)).ShouldSucceed();
-        member.ClearDomainEvents();
+        var member = builder.Generate();
         Members.Store.Add(member);
         return member;
     }
 
-    public Court AddCourt(string name = "Court A", string surface = "glass")
+    public Court Add(Faker<Court> builder)
     {
-        var court = Court.Create(name, surface).ShouldSucceed();
-        court.ClearDomainEvents();
+        var court = builder.Generate();
         Courts.Store.Add(court);
         return court;
     }
 
-    public Booking AddBooking(Member member, Court court, DateTimeOffset start, TimeSpan? duration = null)
+    public Booking Add(Faker<Booking> builder)
     {
-        var slot = TimeSlot.Create(start, start + (duration ?? TimeSpan.FromHours(1))).ShouldSucceed();
-        var booking = Booking.Create(member, court, slot, Now, Policy, upcomingBookingsOfMember: 0).ShouldSucceed();
-        booking.ClearDomainEvents();
+        var booking = builder.Generate();
         Bookings.Store.Add(booking);
         return booking;
     }

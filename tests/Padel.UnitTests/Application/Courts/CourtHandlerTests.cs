@@ -3,6 +3,7 @@ using Padel.Application.Common;
 using Padel.Application.Features.Courts;
 using Padel.Domain.Common;
 using Padel.Domain.Courts;
+using Padel.UnitTests.Builders;
 using Padel.UnitTests.Fakes;
 
 namespace Padel.UnitTests.Application.Courts;
@@ -26,7 +27,7 @@ public class CourtHandlerTests
     [Test]
     public async Task Given_SaveFails_RenameCourt_Should_ReturnTheSaveError()
     {
-        var court = _fixture.AddCourt();
+        var court = _fixture.Add(CourtBuilder.New());
         _fixture.UnitOfWork.FailWith = ApplicationErrors.ConcurrentChange;
         var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
@@ -38,7 +39,7 @@ public class CourtHandlerTests
     [Test]
     public async Task RenameCourt_Should_ChangeTheName()
     {
-        var court = _fixture.AddCourt();
+        var court = _fixture.Add(CourtBuilder.New());
         var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         var result = await handler.Handle(new RenameCourtCommand(court.Id, "Centre Court"), CancellationToken.None).ShouldSucceed();
@@ -50,7 +51,7 @@ public class CourtHandlerTests
     [Test]
     public async Task Given_StaleVersion_RenameCourt_Should_FailWithPreconditionFailed()
     {
-        var court = _fixture.AddCourt();
+        var court = _fixture.Add(CourtBuilder.New().WithName("Court A"));
         var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         var error = await handler.Handle(new RenameCourtCommand(court.Id, "Centre Court", ExpectedVersion: court.Version + 1), CancellationToken.None)
@@ -64,7 +65,7 @@ public class CourtHandlerTests
     [Test]
     public async Task Given_CurrentVersion_RenameCourt_Should_ChangeTheName()
     {
-        var court = _fixture.AddCourt();
+        var court = _fixture.Add(CourtBuilder.New());
         var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         var result = await handler.Handle(new RenameCourtCommand(court.Id, "Centre Court", ExpectedVersion: court.Version), CancellationToken.None).ShouldSucceed();
@@ -75,7 +76,7 @@ public class CourtHandlerTests
     [Test]
     public async Task SetCourtMaintenance_Should_PutCourtInMaintenance()
     {
-        var court = _fixture.AddCourt();
+        var court = _fixture.Add(CourtBuilder.New());
         var handler = new SetCourtMaintenanceCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         var result = await handler.Handle(new SetCourtMaintenanceCommand(court.Id, true), CancellationToken.None).ShouldSucceed();
@@ -86,8 +87,7 @@ public class CourtHandlerTests
     [Test]
     public async Task Given_RetiredCourt_SetCourtMaintenance_Should_Fail()
     {
-        var court = _fixture.AddCourt();
-        court.Retire();
+        var court = _fixture.Add(CourtBuilder.New().Retired());
         var handler = new SetCourtMaintenanceCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         await handler.Handle(new SetCourtMaintenanceCommand(court.Id, true), CancellationToken.None).ShouldFail().Is<BusinessRuleError>();
@@ -97,7 +97,7 @@ public class CourtHandlerTests
     [Test]
     public async Task RetireCourt_Should_RetireAndRaiseCourtRetired()
     {
-        var court = _fixture.AddCourt();
+        var court = _fixture.Add(CourtBuilder.New());
         var handler = new RetireCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
         var result = await handler.Handle(new RetireCourtCommand(court.Id), CancellationToken.None).ShouldSucceed();
@@ -126,10 +126,10 @@ public class CourtHandlerTests
     [Test]
     public async Task Given_SurfaceAndStatusFilters_ListCourts_Should_ReturnMatchesSortedByName()
     {
-        _fixture.AddCourt("Court C", "glass");
-        _fixture.AddCourt("Court A", "Glass");
-        _fixture.AddCourt("Court B", "concrete");
-        _fixture.AddCourt("Court D", "glass").SetMaintenance(true);
+        _fixture.Add(CourtBuilder.New().WithName("Court C").WithSurface("glass"));
+        _fixture.Add(CourtBuilder.New().WithName("Court A").WithSurface("Glass"));
+        _fixture.Add(CourtBuilder.New().WithName("Court B").WithSurface("concrete"));
+        _fixture.Add(CourtBuilder.New().WithName("Court D").WithSurface("glass").InMaintenance());
         var handler = new ListCourtsQueryHandler(_fixture.Courts);
 
         var result = await handler.Handle(
@@ -142,8 +142,8 @@ public class CourtHandlerTests
     [Test]
     public async Task Given_SearchTerm_ListCourts_Should_MatchNamesCaseInsensitively()
     {
-        _fixture.AddCourt("Centre Court");
-        _fixture.AddCourt("Court 2");
+        _fixture.Add(CourtBuilder.New().WithName("Centre Court"));
+        _fixture.Add(CourtBuilder.New().WithName("Court 2"));
         var handler = new ListCourtsQueryHandler(_fixture.Courts);
 
         var result = await handler.Handle(new ListCourtsQuery { Search = "centre" }, CancellationToken.None).ShouldSucceed();

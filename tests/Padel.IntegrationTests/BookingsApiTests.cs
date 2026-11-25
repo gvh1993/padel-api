@@ -4,6 +4,7 @@ using Padel.Api.Features.Bookings;
 using Padel.Api.Features.Courts;
 using Padel.Api.Features.Members;
 using Padel.Domain.Bookings;
+using Padel.IntegrationTests.Builders;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
 
@@ -12,14 +13,6 @@ namespace Padel.IntegrationTests;
 [ClassDataSource<PadelApiFactory>(Shared = SharedType.PerTestSession)]
 public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(factory)
 {
-    private static CreateBookingRequest NewBooking(Guid memberId, Guid courtId, DateTimeOffset start, int minutes = 60) => new()
-    {
-        MemberId = memberId,
-        CourtId = courtId,
-        Start = start,
-        End = start.AddMinutes(minutes),
-    };
-
     [Test]
     public async Task Given_MemberToken_CreateBooking_Should_Return201AndAppearInCourtSchedule()
     {
@@ -27,7 +20,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var court = await CreateCourtAsync();
         var start = FutureSlot();
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, start));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(start).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var booking = response.Value();
@@ -47,7 +40,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var startUtc = FutureSlot();
         var startAmsterdam = startUtc.ToOffset(TimeSpan.FromHours(1));
 
-        var booking = (await As(member).Bookings.Create(NewBooking(member.Id, court.Id, startAmsterdam))).Value();
+        var booking = (await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(startAmsterdam).Generate())).Value();
 
         booking.Start.Offset.Should().Be(TimeSpan.Zero);
         booking.Start.Should().Be(startUtc);
@@ -61,7 +54,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var start = FutureSlot();
         await BookAsync(member, court, start);
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, start.AddMinutes(30)));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(start.AddMinutes(30)).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await response.ReadProblemAsync()).Detail.Should().Contain("already booked");
@@ -75,7 +68,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var start = FutureSlot();
 
         var responses = await Task.WhenAll(members.Select(member =>
-            As(member).Bookings.Create(NewBooking(member.Id, court.Id, start))));
+            As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(start).Generate())));
 
         var statusCodes = responses.Select(r => r.StatusCode).ToList();
         statusCodes.Count(s => s == HttpStatusCode.Created).Should().Be(1);
@@ -92,7 +85,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var court = await CreateCourtAsync();
         await Admin.Members.Suspend(member.Id, new SuspendMemberRequest());
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot()));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(FutureSlot()).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await response.ReadProblemAsync()).Detail.Should().Contain("suspended");
@@ -105,7 +98,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var court = await CreateCourtAsync();
         await Admin.Courts.SetMaintenance(court.Id, new SetCourtMaintenanceRequest { UnderMaintenance = true });
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot()));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(FutureSlot()).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -116,7 +109,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot(daysAhead: -2)));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(FutureSlot(daysAhead: -2)).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -126,7 +119,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     {
         var member = await RegisterMemberAsync();
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, Guid.NewGuid(), FutureSlot()));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(Guid.NewGuid()).StartingAt(FutureSlot()).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -137,7 +130,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, FutureSlot(), minutes: 15));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(FutureSlot(), 15).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await response.ReadProblemAsync()).Errors.Keys.Should().Contain("end");
@@ -150,7 +143,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var other = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
 
-        var response = await As(member).Bookings.Create(NewBooking(other.Id, court.Id, FutureSlot()));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(other.Id).On(court.Id).StartingAt(FutureSlot()).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -164,7 +157,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var booking = await BookAsync(member, court, start);
 
         var cancelled = (await As(member).Bookings.Cancel(booking.Id, new CancelBookingRequest { Reason = "injury" })).Value();
-        var rebooked = await As(member).Bookings.Create(NewBooking(member.Id, court.Id, start));
+        var rebooked = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(start).Generate());
 
         cancelled.Status.Should().Be(BookingStatus.Cancelled);
         cancelled.CancellationReason.Should().Be("injury");
@@ -278,7 +271,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
-        var request = NewBooking(member.Id, court.Id, FutureSlot());
+        var request = CreateBookingRequestBuilder.New().For(member.Id).On(court.Id).StartingAt(FutureSlot()).Generate();
         var key = Guid.NewGuid().ToString();
 
         var first = await As(member).Bookings.Create(request, key);
@@ -296,7 +289,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var start = FutureSlot();
         await BookAsync(member, await CreateCourtAsync(), start);
 
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, (await CreateCourtAsync()).Id, start));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On((await CreateCourtAsync()).Id).StartingAt(start).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await response.ReadProblemAsync()).ErrorCode.Should().Be("Booking.MemberAlreadyBooked");
@@ -308,7 +301,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
         var member = await RegisterMemberAsync();
 
         // 03:00 UTC is 04:00 or 05:00 in Amsterdam: before the club opens.
-        var response = await As(member).Bookings.Create(NewBooking(member.Id, (await CreateCourtAsync()).Id, FutureSlot(hour: 3)));
+        var response = await As(member).Bookings.Create(CreateBookingRequestBuilder.New().For(member.Id).On((await CreateCourtAsync()).Id).StartingAt(FutureSlot(hour: 3)).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await response.ReadProblemAsync()).ErrorCode.Should().Be("Booking.OutsideOpeningHours");

@@ -2,6 +2,7 @@ using System.Net;
 using AwesomeAssertions;
 using Padel.Api.Features.Courts;
 using Padel.Domain.Courts;
+using Padel.IntegrationTests.Builders;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
 
@@ -15,7 +16,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     {
         var name = UniqueName("Court");
 
-        var response = await Admin.Courts.Create(new CreateCourtRequest { Name = name, Surface = "glass" });
+        var response = await Admin.Courts.Create(CreateCourtRequestBuilder.New().WithName(name).Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var court = response.Value();
@@ -27,7 +28,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     [Test]
     public async Task Given_BlankName_CreateCourt_Should_Return400()
     {
-        var response = await Admin.Courts.Create(new CreateCourtRequest { Name = " ", Surface = "glass" });
+        var response = await Admin.Courts.Create(CreateCourtRequestBuilder.New().WithName(" ").Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await response.ReadProblemAsync()).Errors.Keys.Should().Contain("name");
@@ -66,9 +67,9 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     public async Task Given_MemberToken_ListCourts_Should_FilterAndSort()
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
-        await CreateCourtAsync($"B {tag}", "glass");
-        await CreateCourtAsync($"A {tag}", "Glass");
-        await CreateCourtAsync($"C {tag}", "concrete");
+        await CreateCourtAsync(CreateCourtRequestBuilder.New().WithName($"B {tag}").WithSurface("glass"));
+        await CreateCourtAsync(CreateCourtRequestBuilder.New().WithName($"A {tag}").WithSurface("Glass"));
+        await CreateCourtAsync(CreateCourtRequestBuilder.New().WithName($"C {tag}").WithSurface("concrete"));
         var member = await RegisterMemberAsync();
 
         var page = (await As(member).Courts.List(new CourtListParameters
@@ -87,7 +88,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     {
         var member = await RegisterMemberAsync();
 
-        var response = await As(member).Courts.Create(new CreateCourtRequest { Name = UniqueName("Court"), Surface = "glass" });
+        var response = await As(member).Courts.Create(CreateCourtRequestBuilder.New().Generate());
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
