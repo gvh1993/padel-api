@@ -16,7 +16,7 @@ internal sealed class ListCourtsEndpoint : IEndpoint
             .WithDescription("Sort fields: name, surface, status.")
             .ProducesValidationProblems();
 
-    private static async Task<Ok<ListCourtsResponse>> HandleAsync(
+    private static async Task<Results<Ok<ListCourtsResponse>, ProblemHttpResult>> HandleAsync(
         [AsParameters] ListCourtsRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
@@ -31,7 +31,7 @@ internal sealed class ListCourtsEndpoint : IEndpoint
             Search = request.Search,
         };
 
-        var page = await dispatcher.Send<ListCourtsQuery, PagedResult<CourtDto>>(query, cancellationToken);
-        return TypedResults.Ok(PagedResponse.From<ListCourtsResponse, ListCourtsItem, CourtDto>(page, ListCourtsItem.From));
+        var result = await dispatcher.Send<ListCourtsQuery, PagedResult<CourtDto>>(query, cancellationToken);
+        return result.ToHttpResult(page => TypedResults.Ok(PagedResponse.From<ListCourtsResponse, ListCourtsItem, CourtDto>(page, ListCourtsItem.From)));
     }
 }

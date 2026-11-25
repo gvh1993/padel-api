@@ -17,7 +17,7 @@ internal sealed class ReactivateMemberEndpoint : IEndpoint
             .WithDescription("Admin only.")
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Ok<ReactivateMemberResponse>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        TypedResults.Ok(ReactivateMemberResponse.From(
-            await dispatcher.Send<ReactivateMemberCommand, MemberDto>(new ReactivateMemberCommand(id), cancellationToken)));
+    private static async Task<Results<Ok<ReactivateMemberResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<ReactivateMemberCommand, MemberDto>(new ReactivateMemberCommand(id), cancellationToken))
+            .ToHttpResult(member => TypedResults.Ok(ReactivateMemberResponse.From(member)));
 }

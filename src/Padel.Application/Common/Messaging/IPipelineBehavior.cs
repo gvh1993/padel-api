@@ -1,6 +1,9 @@
+using Padel.Domain.Common;
+
 namespace Padel.Application.Common.Messaging;
 
-public interface IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
+public interface IPipelineBehavior<TRequest, TValue> where TRequest : notnull
+    where TValue : notnull
 {
-    Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken);
+    Task<Result<TValue>> Handle(TRequest request, RequestHandlerDelegate<TValue> next, CancellationToken cancellationToken);
 }

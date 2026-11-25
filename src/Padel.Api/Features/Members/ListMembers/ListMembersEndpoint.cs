@@ -18,7 +18,7 @@ internal sealed class ListMembersEndpoint : IEndpoint
             .WithDescription("Admin only. Sort fields: firstName, lastName, email, status, registeredOn.")
             .ProducesValidationProblems();
 
-    private static async Task<Ok<ListMembersResponse>> HandleAsync(
+    private static async Task<Results<Ok<ListMembersResponse>, ProblemHttpResult>> HandleAsync(
         [AsParameters] ListMembersRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
@@ -32,7 +32,7 @@ internal sealed class ListMembersEndpoint : IEndpoint
             Search = request.Search,
         };
 
-        var page = await dispatcher.Send<ListMembersQuery, PagedResult<MemberDto>>(query, cancellationToken);
-        return TypedResults.Ok(PagedResponse.From<ListMembersResponse, ListMembersItem, MemberDto>(page, ListMembersItem.From));
+        var result = await dispatcher.Send<ListMembersQuery, PagedResult<MemberDto>>(query, cancellationToken);
+        return result.ToHttpResult(page => TypedResults.Ok(PagedResponse.From<ListMembersResponse, ListMembersItem, MemberDto>(page, ListMembersItem.From)));
     }
 }

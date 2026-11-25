@@ -7,7 +7,7 @@ public class EmailTests
     [Test]
     public async Task Create_Should_TrimAndLowercaseTheAddress()
     {
-        var email = new Email("  John.Doe@Example.COM ");
+        var email = Email.Create("  John.Doe@Example.COM ").ShouldSucceed();
 
         await Assert.That(email.Value).IsEqualTo("john.doe@example.com");
     }
@@ -15,7 +15,7 @@ public class EmailTests
     [Test]
     public async Task Given_SameAddressWithDifferentCasing_Should_BeEqual()
     {
-        await Assert.That(new Email("A@Example.com")).IsEqualTo(new Email("a@example.com"));
+        await Assert.That(Email.Create("A@Example.com").ShouldSucceed()).IsEqualTo(Email.Create("a@example.com").ShouldSucceed());
     }
 
     [Test]
@@ -28,16 +28,16 @@ public class EmailTests
     [Arguments("user@")]
     [Arguments("user@.com")]
     [Arguments("user@domain.")]
-    public async Task Given_InvalidAddress_Should_ThrowDomainException(string value)
+    public async Task Given_InvalidAddress_Should_Fail(string value)
     {
-        await Assert.That(() => new Email(value)).Throws<DomainException>();
+        await Email.Create(value).ShouldFail();
     }
 
     [Test]
-    public async Task Given_AddressLongerThanMaxLength_Should_ThrowDomainException()
+    public async Task Given_AddressLongerThanMaxLength_Should_Fail()
     {
         var value = new string('a', 64) + "@" + new string('b', Email.MaxLength) + ".com";
 
-        await Assert.That(() => new Email(value)).Throws<DomainException>();
+        await Email.Create(value).ShouldFail();
     }
 }

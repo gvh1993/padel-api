@@ -17,6 +17,7 @@ internal sealed class GetBookingEndpoint : IEndpoint
             .WithDescription("Admins, or the member who made the booking.")
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Ok<GetBookingResponse>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        TypedResults.Ok(GetBookingResponse.From(await dispatcher.Send<GetBookingQuery, BookingDto>(new GetBookingQuery(id), cancellationToken)));
+    private static async Task<Results<Ok<GetBookingResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<GetBookingQuery, BookingDto>(new GetBookingQuery(id), cancellationToken))
+            .ToHttpResult(booking => TypedResults.Ok(GetBookingResponse.From(booking)));
 }

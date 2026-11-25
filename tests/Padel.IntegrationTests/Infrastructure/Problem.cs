@@ -11,6 +11,9 @@ public sealed record Problem
     public string? Title { get; init; }
     public string? Detail { get; init; }
     public string? TraceId { get; init; }
+
+    /// <summary>The stable code of the application error, e.g. <c>Member.EmailInUse</c>.</summary>
+    public string? ErrorCode { get; init; }
     public Dictionary<string, string[]> Errors { get; init; } = [];
 }
 

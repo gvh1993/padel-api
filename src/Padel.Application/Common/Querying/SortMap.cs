@@ -32,10 +32,8 @@ public sealed class SortMap<T>(string defaultSort)
             .DistinctBy(part => part.Field, StringComparer.OrdinalIgnoreCase)
             .Select(part => _fields.TryGetValue(part.Field, out var keySelector)
                 ? new SortExpression<T>(keySelector, part.Descending)
-                : throw new RequestValidationException(new Dictionary<string, string[]>
-                {
-                    ["sort"] = [$"Unknown sort field '{part.Field}'."],
-                }))
+                // The request validator rejects unknown fields (FindUnknownFields), so this is a programming error.
+                : throw new InvalidOperationException($"Unknown sort field '{part.Field}'. Validate the sort with FindUnknownFields first."))
             .ToList();
     }
 

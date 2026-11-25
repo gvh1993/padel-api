@@ -1,5 +1,6 @@
 using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
+using Padel.Domain.Common;
 using Padel.Domain.Members;
 
 namespace Padel.Application.Features.Members;
@@ -10,14 +11,16 @@ public sealed class ReactivateMemberCommandHandler(
     IMemberRepository members,
     IUnitOfWork unitOfWork) : IRequestHandler<ReactivateMemberCommand, MemberDto>
 {
-    public async Task<MemberDto> Handle(ReactivateMemberCommand request, CancellationToken cancellationToken)
+    public async Task<Result<MemberDto>> Handle(ReactivateMemberCommand request, CancellationToken cancellationToken)
     {
-        var member = await members.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw NotFoundException.For<Member>(request.Id);
+        var member = await members.GetByIdAsync(request.Id, cancellationToken);
+        if (member is null)
+        {
+            return ApplicationErrors.NotFound<Member>(request.Id);
+        }
 
         member.Reactivate();
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return member.ToDto();
+        return await unitOfWork.SaveChangesAsync(cancellationToken) is Error saveError ? saveError : member.ToDto();
     }
 }

@@ -25,28 +25,44 @@ public sealed class CreateBookingCommandHandler(
     ICurrentUser currentUser,
     TimeProvider timeProvider) : IRequestHandler<CreateBookingCommand, BookingDto>
 {
-    public async Task<BookingDto> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
+    public async Task<Result<BookingDto>> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
     {
-        currentUser.EnsureCanAccessMember(request.MemberId);
+        if (currentUser.CanAccessMember(request.MemberId) is Error accessDenied)
+        {
+            return accessDenied;
+        }
 
-        var member = await members.GetByIdAsync(request.MemberId, cancellationToken)
-            ?? throw NotFoundException.For<Member>(request.MemberId);
+        var member = await members.GetByIdAsync(request.MemberId, cancellationToken);
+        if (member is null)
+        {
+            return ApplicationErrors.NotFound<Member>(request.MemberId);
+        }
 
-        var court = await courts.GetByIdAsync(request.CourtId, cancellationToken)
-            ?? throw NotFoundException.For<Court>(request.CourtId);
+        var court = await courts.GetByIdAsync(request.CourtId, cancellationToken);
+        if (court is null)
+        {
+            return ApplicationErrors.NotFound<Court>(request.CourtId);
+        }
 
-        var slot = new TimeSlot(request.Start, request.End);
-        var booking = Booking.Create(member, court, slot, timeProvider.GetUtcNow());
+        var slotResult = TimeSlot.Create(request.Start, request.End);
+        if (slotResult is not TimeSlot slot)
+        {
+            return slotResult.Error;
+        }
+
+        var bookingResult = Booking.Create(member, court, slot, timeProvider.GetUtcNow());
+        if (bookingResult is not Booking booking)
+        {
+            return bookingResult.Error;
+        }
 
         // Fast path for a friendly error; the database exclusion constraint guards against races.
         if (await bookings.HasOverlapAsync(court.Id, slot, cancellationToken))
         {
-            throw new ConflictException("The court is already booked for the requested time slot.");
+            return BookingErrors.SlotTaken;
         }
 
         bookings.Add(booking);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return booking.ToDto();
+        return await unitOfWork.SaveChangesAsync(cancellationToken) is Error saveError ? saveError : booking.ToDto();
     }
 }

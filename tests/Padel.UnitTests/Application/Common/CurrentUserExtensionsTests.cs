@@ -1,4 +1,5 @@
 using Padel.Application.Common;
+using Padel.Domain.Common;
 using Padel.UnitTests.Fakes;
 
 namespace Padel.UnitTests.Application.Common;
@@ -8,27 +9,26 @@ public class CurrentUserExtensionsTests
     private static readonly Guid MemberId = Guid.NewGuid();
 
     [Test]
-    public async Task Given_Admin_EnsureCanAccessMember_Should_Allow()
+    public async Task Given_Admin_CanAccessMember_Should_Succeed()
     {
-        await Assert.That(() => FakeCurrentUser.Admin().EnsureCanAccessMember(MemberId)).ThrowsNothing();
+        await Assert.That(FakeCurrentUser.Admin().CanAccessMember(MemberId) is Success).IsTrue();
     }
 
     [Test]
-    public async Task Given_SameMember_EnsureCanAccessMember_Should_Allow()
+    public async Task Given_SameMember_CanAccessMember_Should_Succeed()
     {
-        await Assert.That(() => FakeCurrentUser.ForMember(MemberId).EnsureCanAccessMember(MemberId)).ThrowsNothing();
+        await Assert.That(FakeCurrentUser.ForMember(MemberId).CanAccessMember(MemberId) is Success).IsTrue();
     }
 
     [Test]
-    public async Task Given_OtherMember_EnsureCanAccessMember_Should_ThrowForbiddenException()
+    public async Task Given_OtherMember_CanAccessMember_Should_FailWithForbidden()
     {
-        await Assert.That(() => FakeCurrentUser.ForMember(Guid.NewGuid()).EnsureCanAccessMember(MemberId))
-            .Throws<ForbiddenException>();
+        await FakeCurrentUser.ForMember(Guid.NewGuid()).CanAccessMember(MemberId).ShouldFail().Is<ForbiddenError>();
     }
 
     [Test]
-    public async Task Given_UserWithoutMemberLink_EnsureCanAccessMember_Should_ThrowForbiddenException()
+    public async Task Given_UserWithoutMemberLink_CanAccessMember_Should_FailWithForbidden()
     {
-        await Assert.That(() => new FakeCurrentUser().EnsureCanAccessMember(MemberId)).Throws<ForbiddenException>();
+        await new FakeCurrentUser().CanAccessMember(MemberId).ShouldFail().Is<ForbiddenError>();
     }
 }

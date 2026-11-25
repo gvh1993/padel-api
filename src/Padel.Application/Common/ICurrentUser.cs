@@ -10,19 +10,3 @@ public interface ICurrentUser
 
     bool IsAdmin { get; }
 }
-
-public static class CurrentUserExtensions
-{
-    /// <summary>
-    /// Admins may access every member; other users only their own member data.
-    /// </summary>
-    public static void EnsureCanAccessMember(this ICurrentUser currentUser, Guid memberId)
-    {
-        if (currentUser.IsAdmin || currentUser.MemberId == memberId)
-        {
-            return;
-        }
-
-        throw new ForbiddenException();
-    }
-}

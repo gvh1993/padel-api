@@ -85,6 +85,35 @@ Endpoints implement `IEndpoint` and are mapped automatically at start-up. Reques
 - Handlers, validators and endpoints are sealed; endpoints are internal.
 - Entities have no public setters.
 
+### Errors: results as C# unions
+
+Expected failures are not exceptions. Results are C# 15 union types:
+
+```csharp
+public union Result<T>(T, Error) where T : notnull;   // the value, or an error
+public union Result(Success, Error);                  // success without a value, or an error
+public union Error(ValidationError, NotFoundError, ConflictError, ForbiddenError, BusinessRuleError);
+```
+
+Every error kind is a record with a stable `Code`, such as `Booking.SlotTaken`, and a `Description`. `ValidationError` also lists the messages per field. Code checks results with pattern matching:
+
+```csharp
+var slotResult = TimeSlot.Create(request.Start, request.End);
+if (slotResult is not TimeSlot slot)
+{
+    return slotResult.Error;
+}
+
+if (booking.Cancel(request.Reason) is Error error)
+{
+    return error;
+}
+```
+
+The endpoints map each error kind to its HTTP status with a `switch` over `Error` (`ResultExtensions.ToProblem`). The switch has no default branch, so a new error kind does not compile until it is mapped. The validation behavior returns a `ValidationError`. The unit of work turns database conflicts into a `ConflictError`.
+
+Only truly unexpected problems are exceptions; the exception handler turns those into a 500. The architecture tests check that no layer defines its own exception types.
+
 ### Business rules enforced in the database
 
 - `IX_Members_Email`: a unique email address per member.
@@ -96,7 +125,7 @@ Violations of these constraints return **409 Conflict**.
 ## API conventions
 
 - **JSON:** requests and responses are JSON. Enums are written as strings.
-- **Errors:** RFC 9457 problem details (`application/problem+json`). Each problem includes a `traceId`.
+- **Errors:** RFC 9457 problem details (`application/problem+json`). Each problem includes a `traceId`. Application errors also include an `errorCode`, such as `Member.EmailInUse`, that clients can rely on.
 - **Lists:** every list endpoint supports `page`, `pageSize` (1–100) and `sort`, for example `sort=lastName,-registeredOn`. A `-` before a field sorts it descending. Each list also has its own filters:
   - `GET /api/members`: `status`, `search`
   - `GET /api/courts`: `status`, `surface`, `search`

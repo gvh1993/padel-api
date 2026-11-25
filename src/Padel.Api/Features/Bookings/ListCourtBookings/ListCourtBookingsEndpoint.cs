@@ -19,7 +19,7 @@ internal sealed class ListCourtBookingsEndpoint : IEndpoint
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Ok<ListCourtBookingsResponse>> HandleAsync(
+    private static async Task<Results<Ok<ListCourtBookingsResponse>, ProblemHttpResult>> HandleAsync(
         Guid id,
         [AsParameters] ListCourtBookingsRequest request,
         IRequestDispatcher dispatcher,
@@ -36,7 +36,7 @@ internal sealed class ListCourtBookingsEndpoint : IEndpoint
             To = request.To,
         };
 
-        var page = await dispatcher.Send<ListCourtBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken);
-        return TypedResults.Ok(PagedResponse.From<ListCourtBookingsResponse, ListCourtBookingsItem, BookingDto>(page, ListCourtBookingsItem.From));
+        var result = await dispatcher.Send<ListCourtBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken);
+        return result.ToHttpResult(page => TypedResults.Ok(PagedResponse.From<ListCourtBookingsResponse, ListCourtBookingsItem, BookingDto>(page, ListCourtBookingsItem.From)));
     }
 }

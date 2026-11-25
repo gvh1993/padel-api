@@ -17,24 +17,26 @@ public sealed class PadelUnitOfWork(
 {
     private const int MaxDispatchRounds = 10;
 
-    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<Result> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await DispatchDomainEventsAsync(cancellationToken);
 
         try
         {
             await context.SaveChangesAsync(cancellationToken);
+            return Success.Instance;
         }
-        catch (DbUpdateConcurrencyException exception)
+        catch (DbUpdateConcurrencyException)
         {
-            throw new ConflictException("The resource was changed by another request. Reload it and try again.", exception);
+            return ApplicationErrors.ConcurrentChange;
         }
         catch (DbUpdateException exception) when (exception.InnerException is PostgresException
         {
             SqlState: PostgresErrorCodes.UniqueViolation or PostgresErrorCodes.ExclusionViolation,
         } postgresException)
         {
-            throw new ConflictException(DatabaseConstraints.MessageFor(postgresException.ConstraintName), exception);
+            // The database guards what a concurrent request could slip past the handler's own checks.
+            return DatabaseConstraints.ErrorFor(postgresException.ConstraintName);
         }
     }
 

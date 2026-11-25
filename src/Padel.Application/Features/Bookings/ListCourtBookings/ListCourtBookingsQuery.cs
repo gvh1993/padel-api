@@ -3,6 +3,7 @@ using Padel.Application.Common.Messaging;
 using Padel.Application.Common.Querying;
 using Padel.Application.Features.Courts;
 using Padel.Domain.Bookings;
+using Padel.Domain.Common;
 using Padel.Domain.Courts;
 
 namespace Padel.Application.Features.Bookings;
@@ -22,10 +23,12 @@ public sealed class ListCourtBookingsQueryHandler(
     IBookingRepository bookings,
     ICourtRepository courts) : IRequestHandler<ListCourtBookingsQuery, PagedResult<BookingDto>>
 {
-    public async Task<PagedResult<BookingDto>> Handle(ListCourtBookingsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<BookingDto>>> Handle(ListCourtBookingsQuery request, CancellationToken cancellationToken)
     {
-        _ = await courts.GetByIdAsync(request.CourtId, cancellationToken)
-            ?? throw NotFoundException.For<Court>(request.CourtId);
+        if (await courts.GetByIdAsync(request.CourtId, cancellationToken) is null)
+        {
+            return ApplicationErrors.NotFound<Court>(request.CourtId);
+        }
 
         var courtId = request.CourtId;
         var options = ListOptions<Booking>.From(request, BookingSorting.Map)

@@ -17,7 +17,7 @@ internal sealed class MarkBookingNoShowEndpoint : IEndpoint
             .WithDescription("Admin only. Only after the slot has started.")
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
-    private static async Task<Ok<MarkBookingNoShowResponse>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        TypedResults.Ok(MarkBookingNoShowResponse.From(
-            await dispatcher.Send<MarkBookingNoShowCommand, BookingDto>(new MarkBookingNoShowCommand(id), cancellationToken)));
+    private static async Task<Results<Ok<MarkBookingNoShowResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<MarkBookingNoShowCommand, BookingDto>(new MarkBookingNoShowCommand(id), cancellationToken))
+            .ToHttpResult(booking => TypedResults.Ok(MarkBookingNoShowResponse.From(booking)));
 }

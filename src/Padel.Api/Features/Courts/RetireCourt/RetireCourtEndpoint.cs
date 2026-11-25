@@ -17,7 +17,7 @@ internal sealed class RetireCourtEndpoint : IEndpoint
             .WithDescription("Admin only. Retiring a retired court has no effect.")
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Ok<RetireCourtResponse>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        TypedResults.Ok(RetireCourtResponse.From(
-            await dispatcher.Send<RetireCourtCommand, CourtDto>(new RetireCourtCommand(id), cancellationToken)));
+    private static async Task<Results<Ok<RetireCourtResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<RetireCourtCommand, CourtDto>(new RetireCourtCommand(id), cancellationToken))
+            .ToHttpResult(court => TypedResults.Ok(RetireCourtResponse.From(court)));
 }

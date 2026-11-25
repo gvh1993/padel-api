@@ -1,5 +1,6 @@
 using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
+using Padel.Domain.Common;
 using Padel.Domain.Courts;
 
 namespace Padel.Application.Features.Courts;
@@ -14,13 +15,15 @@ public sealed class CreateCourtCommandHandler(
     ICourtRepository courts,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateCourtCommand, CourtDto>
 {
-    public async Task<CourtDto> Handle(CreateCourtCommand request, CancellationToken cancellationToken)
+    public async Task<Result<CourtDto>> Handle(CreateCourtCommand request, CancellationToken cancellationToken)
     {
-        var court = new Court(request.Name, request.Surface);
+        var courtResult = Court.Create(request.Name, request.Surface);
+        if (courtResult is not Court court)
+        {
+            return courtResult.Error;
+        }
 
         courts.Add(court);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return court.ToDto();
+        return await unitOfWork.SaveChangesAsync(cancellationToken) is Error saveError ? saveError : court.ToDto();
     }
 }

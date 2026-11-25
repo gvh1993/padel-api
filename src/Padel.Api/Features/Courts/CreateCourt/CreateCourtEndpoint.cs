@@ -17,14 +17,14 @@ internal sealed class CreateCourtEndpoint : IEndpoint
             .WithDescription("Admin only.")
             .ProducesValidationProblems();
 
-    private static async Task<CreatedAtRoute<CreateCourtResponse>> HandleAsync(
+    private static async Task<Results<CreatedAtRoute<CreateCourtResponse>, ProblemHttpResult>> HandleAsync(
         CreateCourtRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
     {
         var command = new CreateCourtCommand { Name = request.Name, Surface = request.Surface };
 
-        var court = await dispatcher.Send<CreateCourtCommand, CourtDto>(command, cancellationToken);
-        return TypedResults.CreatedAtRoute(CreateCourtResponse.From(court), GetCourtEndpoint.Name, new { id = court.Id });
+        var result = await dispatcher.Send<CreateCourtCommand, CourtDto>(command, cancellationToken);
+        return result.ToHttpResult(court => TypedResults.CreatedAtRoute(CreateCourtResponse.From(court), GetCourtEndpoint.Name, new { id = court.Id }));
     }
 }

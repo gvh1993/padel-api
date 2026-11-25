@@ -16,7 +16,7 @@ internal sealed class ListBookingsEndpoint : IEndpoint
             .WithDescription("Admins see all bookings; members only their own. Sort fields: start, end, status, createdOn.")
             .ProducesValidationProblems();
 
-    private static async Task<Ok<ListBookingsResponse>> HandleAsync(
+    private static async Task<Results<Ok<ListBookingsResponse>, ProblemHttpResult>> HandleAsync(
         [AsParameters] ListBookingsRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
@@ -33,7 +33,7 @@ internal sealed class ListBookingsEndpoint : IEndpoint
             To = request.To,
         };
 
-        var page = await dispatcher.Send<ListBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken);
-        return TypedResults.Ok(PagedResponse.From<ListBookingsResponse, ListBookingsItem, BookingDto>(page, ListBookingsItem.From));
+        var result = await dispatcher.Send<ListBookingsQuery, PagedResult<BookingDto>>(query, cancellationToken);
+        return result.ToHttpResult(page => TypedResults.Ok(PagedResponse.From<ListBookingsResponse, ListBookingsItem, BookingDto>(page, ListBookingsItem.From)));
     }
 }

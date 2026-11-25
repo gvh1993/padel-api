@@ -19,23 +19,42 @@ public sealed class UpdateMemberProfileCommandHandler(
     IUnitOfWork unitOfWork,
     ICurrentUser currentUser) : IRequestHandler<UpdateMemberProfileCommand, MemberDto>
 {
-    public async Task<MemberDto> Handle(UpdateMemberProfileCommand request, CancellationToken cancellationToken)
+    public async Task<Result<MemberDto>> Handle(UpdateMemberProfileCommand request, CancellationToken cancellationToken)
     {
-        currentUser.EnsureCanAccessMember(request.Id);
+        if (currentUser.CanAccessMember(request.Id) is Error accessDenied)
+        {
+            return accessDenied;
+        }
 
-        var member = await members.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw NotFoundException.For<Member>(request.Id);
+        var member = await members.GetByIdAsync(request.Id, cancellationToken);
+        if (member is null)
+        {
+            return ApplicationErrors.NotFound<Member>(request.Id);
+        }
 
-        var email = new Email(request.Email);
+        var emailResult = Email.Create(request.Email);
+        if (emailResult is not Email email)
+        {
+            return emailResult.Error;
+        }
+
+        var nameResult = FullName.Create(request.FirstName, request.LastName);
+        if (nameResult is not FullName name)
+        {
+            return nameResult.Error;
+        }
+
         var owner = await members.GetByEmailAsync(email, cancellationToken);
         if (owner is not null && owner.Id != member.Id)
         {
-            throw new ConflictException($"A member with email '{email}' already exists.");
+            return MemberErrors.EmailInUse(email);
         }
 
-        member.UpdateProfile(new FullName(request.FirstName, request.LastName), email, request.Phone);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (member.UpdateProfile(name, email, request.Phone) is Error updatedError)
+        {
+            return updatedError;
+        }
 
-        return member.ToDto();
+        return await unitOfWork.SaveChangesAsync(cancellationToken) is Error saveError ? saveError : member.ToDto();
     }
 }

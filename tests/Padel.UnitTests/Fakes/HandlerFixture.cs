@@ -27,7 +27,7 @@ public sealed class HandlerFixture
 
     public Member AddMember(string email = "gj@example.com", string firstName = "Gert-Jan", string lastName = "De Vries")
     {
-        var member = new Member(new FullName(firstName, lastName), new Email(email), null, Now.AddDays(-30));
+        var member = Member.Register(FullName.Create(firstName, lastName).ShouldSucceed(), Email.Create(email).ShouldSucceed(), null, Now.AddDays(-30)).ShouldSucceed();
         member.ClearDomainEvents();
         Members.Store.Add(member);
         return member;
@@ -35,7 +35,7 @@ public sealed class HandlerFixture
 
     public Court AddCourt(string name = "Court A", string surface = "glass")
     {
-        var court = new Court(name, surface);
+        var court = Court.Create(name, surface).ShouldSucceed();
         court.ClearDomainEvents();
         Courts.Store.Add(court);
         return court;
@@ -43,8 +43,8 @@ public sealed class HandlerFixture
 
     public Booking AddBooking(Member member, Court court, DateTimeOffset start, TimeSpan? duration = null)
     {
-        var slot = new TimeSlot(start, start + (duration ?? TimeSpan.FromHours(1)));
-        var booking = Booking.Create(member, court, slot, Now);
+        var slot = TimeSlot.Create(start, start + (duration ?? TimeSpan.FromHours(1))).ShouldSucceed();
+        var booking = Booking.Create(member, court, slot, Now).ShouldSucceed();
         booking.ClearDomainEvents();
         Bookings.Store.Add(booking);
         return booking;

@@ -1,3 +1,6 @@
+using Padel.Domain.Bookings;
+using Padel.Domain.Common;
+
 namespace Padel.Infrastructure.Persistence;
 
 /// <summary>
@@ -10,10 +13,10 @@ internal static class DatabaseConstraints
 
     public const string RowVersionColumn = "Version";
 
-    public static string MessageFor(string? constraintName) => constraintName switch
+    public static Error ErrorFor(string? constraintName) => constraintName switch
     {
-        MemberEmailUnique => "A member with this email already exists.",
-        BookingNoOverlap => "The court is already booked for the requested time slot.",
-        _ => "The request conflicts with existing data.",
+        MemberEmailUnique => Error.Conflict("Member.EmailInUse", "A member with this email already exists."),
+        BookingNoOverlap => BookingErrors.SlotTaken,
+        _ => Error.Conflict("Database.Conflict", "The request conflicts with existing data."),
     };
 }

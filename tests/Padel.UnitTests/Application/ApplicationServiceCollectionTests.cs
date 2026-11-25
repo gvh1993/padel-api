@@ -8,6 +8,7 @@ using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
 using Padel.Application.Features.Courts;
 using Padel.Application.Features.Members;
+using Padel.Domain.Common;
 using Padel.Domain.Members;
 using Padel.UnitTests.Fakes;
 using TUnit.Assertions.Enums;
@@ -78,14 +79,16 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task Given_InvalidCommand_Dispatcher_Should_ThrowRequestValidationExceptionFromPipeline()
+    public async Task Given_InvalidCommand_Dispatcher_Should_FailWithValidationErrorsFromPipeline()
     {
         await using var provider = BuildProvider();
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IRequestDispatcher>();
 
-        await Assert.ThrowsAsync<RequestValidationException>(() => dispatcher.Send<RegisterMemberCommand, MemberDto>(
-            new RegisterMemberCommand { FirstName = "", LastName = "", Email = "" }));
+        var error = await dispatcher.Send<RegisterMemberCommand, MemberDto>(
+            new RegisterMemberCommand { FirstName = "", LastName = "", Email = "" }).ShouldFail().Is<ValidationError>();
+
+        await Assert.That(error.FieldErrors.Keys).Contains("Email");
     }
 
     [Test]

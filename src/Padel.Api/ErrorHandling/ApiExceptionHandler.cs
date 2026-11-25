@@ -1,13 +1,11 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Padel.Application.Common;
-using Padel.Domain.Common;
 
 namespace Padel.Api.ErrorHandling;
 
 /// <summary>
-/// Translates exceptions into RFC 9457 problem details.
+/// Last line of defence: turns unexpected exceptions (and malformed requests) into RFC 9457 problem details.
+/// Expected failures are not exceptions; endpoints return them as results (see <c>ResultExtensions</c>).
 /// </summary>
 internal sealed class ApiExceptionHandler(
     IProblemDetailsService problemDetailsService,
@@ -17,16 +15,7 @@ internal sealed class ApiExceptionHandler(
     {
         var problem = exception switch
         {
-            RequestValidationException validation => new HttpValidationProblemDetails(ToCamelCaseKeys(validation.Errors))
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "One or more validation errors occurred.",
-            },
             BadHttpRequestException badRequest => Problem(badRequest.StatusCode, "The request is invalid.", badRequest.Message),
-            DomainException => Problem(StatusCodes.Status422UnprocessableEntity, "A business rule was violated.", exception.Message),
-            NotFoundException => Problem(StatusCodes.Status404NotFound, "The resource was not found.", exception.Message),
-            ConflictException => Problem(StatusCodes.Status409Conflict, "The request conflicts with the current state.", exception.Message),
-            ForbiddenException => Problem(StatusCodes.Status403Forbidden, "Access denied.", exception.Message),
             OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested =>
                 Problem(StatusCodes.Status499ClientClosedRequest, "The client closed the request.", null),
             _ => null,
@@ -55,6 +44,4 @@ internal sealed class ApiExceptionHandler(
         Detail = detail,
     };
 
-    private static Dictionary<string, string[]> ToCamelCaseKeys(IReadOnlyDictionary<string, string[]> errors) =>
-        errors.ToDictionary(error => JsonNamingPolicy.CamelCase.ConvertName(error.Key), error => error.Value);
 }

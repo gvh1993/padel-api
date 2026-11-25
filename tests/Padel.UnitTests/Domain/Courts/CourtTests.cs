@@ -5,7 +5,7 @@ namespace Padel.UnitTests.Domain.Courts;
 
 public class CourtTests
 {
-    private static Court CreateCourt() => new("Court A", "glass");
+    private static Court CreateCourt() => Court.Create("Court A", "glass").ShouldSucceed();
 
     [Test]
     public async Task Create_Should_CreateAvailableCourtAndRaiseCourtCreated()
@@ -21,16 +21,16 @@ public class CourtTests
     [Test]
     [Arguments("")]
     [Arguments("   ")]
-    public async Task Given_BlankNameOrSurface_Should_ThrowDomainException(string value)
+    public async Task Given_BlankNameOrSurface_Should_Fail(string value)
     {
-        await Assert.That(() => new Court(value, "glass")).Throws<DomainException>();
-        await Assert.That(() => new Court("Court A", value)).Throws<DomainException>();
+        await Court.Create(value, "glass").ShouldFail();
+        await Court.Create("Court A", value).ShouldFail();
     }
 
     [Test]
-    public async Task Given_NameLongerThanMaxLength_Should_ThrowDomainException()
+    public async Task Given_NameLongerThanMaxLength_Should_Fail()
     {
-        await Assert.That(() => new Court(new string('a', Court.MaxLength + 1), "glass")).Throws<DomainException>();
+        await Court.Create(new string('a', Court.MaxLength + 1), "glass").ShouldFail();
     }
 
     [Test]
@@ -81,11 +81,11 @@ public class CourtTests
     }
 
     [Test]
-    public async Task Given_RetiredCourt_SetMaintenance_Should_ThrowDomainException()
+    public async Task Given_RetiredCourt_SetMaintenance_Should_Fail()
     {
         var court = CreateCourt();
         court.Retire();
 
-        await Assert.That(() => court.SetMaintenance(true)).Throws<DomainException>();
+        await court.SetMaintenance(true).ShouldFail();
     }
 }

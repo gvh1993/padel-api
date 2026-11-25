@@ -16,11 +16,11 @@ internal sealed class CancelBookingEndpoint : IEndpoint
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
-    private static async Task<Ok<CancelBookingResponse>> HandleAsync(
+    private static async Task<Results<Ok<CancelBookingResponse>, ProblemHttpResult>> HandleAsync(
         Guid id,
         CancelBookingRequest? request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(CancelBookingResponse.From(
-            await dispatcher.Send<CancelBookingCommand, BookingDto>(new CancelBookingCommand(id, request?.Reason), cancellationToken)));
+        (await dispatcher.Send<CancelBookingCommand, BookingDto>(new CancelBookingCommand(id, request?.Reason), cancellationToken))
+            .ToHttpResult(booking => TypedResults.Ok(CancelBookingResponse.From(booking)));
 }

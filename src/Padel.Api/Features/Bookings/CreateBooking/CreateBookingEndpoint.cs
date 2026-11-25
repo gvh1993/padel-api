@@ -18,7 +18,7 @@ internal sealed class CreateBookingEndpoint : IEndpoint
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status422UnprocessableEntity);
 
-    private static async Task<CreatedAtRoute<CreateBookingResponse>> HandleAsync(
+    private static async Task<Results<CreatedAtRoute<CreateBookingResponse>, ProblemHttpResult>> HandleAsync(
         CreateBookingRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
@@ -31,7 +31,7 @@ internal sealed class CreateBookingEndpoint : IEndpoint
             End = request.End,
         };
 
-        var booking = await dispatcher.Send<CreateBookingCommand, BookingDto>(command, cancellationToken);
-        return TypedResults.CreatedAtRoute(CreateBookingResponse.From(booking), GetBookingEndpoint.Name, new { id = booking.Id });
+        var result = await dispatcher.Send<CreateBookingCommand, BookingDto>(command, cancellationToken);
+        return result.ToHttpResult(booking => TypedResults.CreatedAtRoute(CreateBookingResponse.From(booking), GetBookingEndpoint.Name, new { id = booking.Id }));
     }
 }

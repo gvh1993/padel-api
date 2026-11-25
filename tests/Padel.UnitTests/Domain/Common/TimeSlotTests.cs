@@ -9,7 +9,7 @@ public class TimeSlotTests
     [Test]
     public async Task Create_Should_ExposeStartEndAndDuration()
     {
-        var slot = new TimeSlot(Base, Base.AddHours(1));
+        var slot = TimeSlot.Create(Base, Base.AddHours(1)).ShouldSucceed();
 
         await Assert.That(slot.Start).IsEqualTo(Base);
         await Assert.That(slot.End).IsEqualTo(Base.AddHours(1));
@@ -21,7 +21,7 @@ public class TimeSlotTests
     {
         var amsterdam = new DateTimeOffset(2026, 11, 25, 10, 0, 0, TimeSpan.FromHours(1));
 
-        var slot = new TimeSlot(amsterdam, amsterdam.AddHours(1));
+        var slot = TimeSlot.Create(amsterdam, amsterdam.AddHours(1)).ShouldSucceed();
 
         await Assert.That(slot.Start.Offset).IsEqualTo(TimeSpan.Zero);
         await Assert.That(slot.Start).IsEqualTo(Base);
@@ -32,9 +32,9 @@ public class TimeSlotTests
     [Arguments(0)]
     [Arguments(29)]
     [Arguments(181)]
-    public async Task Given_InvalidDurationInMinutes_Should_ThrowDomainException(int minutes)
+    public async Task Given_InvalidDurationInMinutes_Should_Fail(int minutes)
     {
-        await Assert.That(() => new TimeSlot(Base, Base.AddMinutes(minutes))).Throws<DomainException>();
+        await TimeSlot.Create(Base, Base.AddMinutes(minutes)).ShouldFail();
     }
 
     [Test]
@@ -42,7 +42,7 @@ public class TimeSlotTests
     [Arguments(180)]
     public async Task Given_BoundaryDurationInMinutes_Should_BeValid(int minutes)
     {
-        var slot = new TimeSlot(Base, Base.AddMinutes(minutes));
+        var slot = TimeSlot.Create(Base, Base.AddMinutes(minutes)).ShouldSucceed();
 
         await Assert.That(slot.Duration).IsEqualTo(TimeSpan.FromMinutes(minutes));
     }
@@ -55,8 +55,8 @@ public class TimeSlotTests
     [Arguments(-60, false)]
     public async Task Overlaps_Should_TreatSlotsAsHalfOpenIntervals(int offsetMinutes, bool expected)
     {
-        var slot = new TimeSlot(Base, Base.AddHours(1));
-        var other = new TimeSlot(Base.AddMinutes(offsetMinutes), Base.AddMinutes(offsetMinutes).AddHours(1));
+        var slot = TimeSlot.Create(Base, Base.AddHours(1)).ShouldSucceed();
+        var other = TimeSlot.Create(Base.AddMinutes(offsetMinutes), Base.AddMinutes(offsetMinutes).AddHours(1)).ShouldSucceed();
 
         await Assert.That(slot.Overlaps(other)).IsEqualTo(expected);
     }

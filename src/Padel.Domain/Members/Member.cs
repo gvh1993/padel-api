@@ -7,18 +7,11 @@ public class Member : EntityWithDomainEvents
     public const int PhoneMinDigits = 8;
     public const int PhoneMaxDigits = 15;
 
-    public FullName Name { get; private set; } = null!;
-    public Email Email { get; private set; } = null!;
-    public string? Phone { get; private set; }
-    public MemberStatus Status { get; private set; }
-    public string? SuspensionReason { get; private set; }
-    public DateTimeOffset RegisteredOn { get; private set; }
-
-    public Member(FullName name, Email email, string? phone, DateTimeOffset registeredOn)
+    private Member(FullName name, Email email, string? phone, DateTimeOffset registeredOn)
     {
         Name = name;
         Email = email;
-        Phone = NormalizePhone(phone);
+        Phone = phone;
         Status = MemberStatus.Active;
         RegisteredOn = registeredOn;
 
@@ -29,27 +22,59 @@ public class Member : EntityWithDomainEvents
     {
     }
 
+    public FullName Name { get; private set; } = null!;
+    public Email Email { get; private set; } = null!;
+    public string? Phone { get; private set; }
+    public MemberStatus Status { get; private set; }
+    public string? SuspensionReason { get; private set; }
+    public DateTimeOffset RegisteredOn { get; private set; }
+
     public bool CanBook => Status == MemberStatus.Active;
 
-    public void UpdateProfile(FullName name, Email email, string? phone)
+    public static Result<Member> Register(FullName name, Email email, string? phone, DateTimeOffset registeredOn)
     {
-        Name = name;
-        Email = email;
-        Phone = NormalizePhone(phone);
+        if (ValidatePhone(phone) is Error error)
+        {
+            return error;
+        }
+
+        return new Member(name, email, DigitsOf(phone), registeredOn);
     }
 
-    public void Suspend(string? reason = null)
+    public Result UpdateProfile(FullName name, Email email, string? phone)
+    {
+        if (ValidatePhone(phone) is Error error)
+        {
+            return error;
+        }
+
+        Name = name;
+        Email = email;
+        Phone = DigitsOf(phone);
+        return Success.Instance;
+    }
+
+    /// <summary>Suspends the member. Suspending a suspended member has no effect.</summary>
+    public Result Suspend(string? reason = null)
     {
         if (Status == MemberStatus.Suspended)
         {
-            return;
+            return Success.Instance;
+        }
+
+        var suspensionReason = Reason.Create(reason);
+        if (suspensionReason is not Reason validReason)
+        {
+            return suspensionReason.Error;
         }
 
         Status = MemberStatus.Suspended;
-        SuspensionReason = Reason.Normalize(reason);
+        SuspensionReason = validReason.Text;
         AddDomainEvent(new MemberSuspended(Id, SuspensionReason));
+        return Success.Instance;
     }
 
+    /// <summary>Reactivates the member. Reactivating an active member has no effect.</summary>
     public void Reactivate()
     {
         if (Status == MemberStatus.Active)
@@ -62,19 +87,17 @@ public class Member : EntityWithDomainEvents
         AddDomainEvent(new MemberReactivated(Id));
     }
 
-    private static string? NormalizePhone(string? phone)
+    /// <summary>A phone number is optional; when given, it must have a valid number of digits.</summary>
+    private static Result ValidatePhone(string? phone)
     {
-        if (string.IsNullOrWhiteSpace(phone))
+        if (DigitsOf(phone) is { Length: < PhoneMinDigits or > PhoneMaxDigits })
         {
-            return null;
+            return MemberErrors.InvalidPhone;
         }
 
-        var cleaned = new string(phone.Where(char.IsDigit).ToArray());
-        if (cleaned.Length is < PhoneMinDigits or > PhoneMaxDigits)
-        {
-            throw new DomainException($"Phone number must contain between {PhoneMinDigits} and {PhoneMaxDigits} digits.");
-        }
-
-        return cleaned;
+        return Success.Instance;
     }
+
+    private static string? DigitsOf(string? phone) =>
+        string.IsNullOrWhiteSpace(phone) ? null : new string(phone.Where(char.IsDigit).ToArray());
 }

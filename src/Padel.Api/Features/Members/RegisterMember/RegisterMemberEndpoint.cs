@@ -18,7 +18,7 @@ internal sealed class RegisterMemberEndpoint : IEndpoint
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status409Conflict);
 
-    private static async Task<CreatedAtRoute<RegisterMemberResponse>> HandleAsync(
+    private static async Task<Results<CreatedAtRoute<RegisterMemberResponse>, ProblemHttpResult>> HandleAsync(
         RegisterMemberRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken)
@@ -31,7 +31,7 @@ internal sealed class RegisterMemberEndpoint : IEndpoint
             Phone = request.Phone,
         };
 
-        var member = await dispatcher.Send<RegisterMemberCommand, MemberDto>(command, cancellationToken);
-        return TypedResults.CreatedAtRoute(RegisterMemberResponse.From(member), GetMemberEndpoint.Name, new { id = member.Id });
+        var result = await dispatcher.Send<RegisterMemberCommand, MemberDto>(command, cancellationToken);
+        return result.ToHttpResult(member => TypedResults.CreatedAtRoute(RegisterMemberResponse.From(member), GetMemberEndpoint.Name, new { id = member.Id }));
     }
 }

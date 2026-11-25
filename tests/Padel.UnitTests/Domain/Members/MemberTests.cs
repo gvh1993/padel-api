@@ -7,8 +7,10 @@ public class MemberTests
 {
     private static readonly DateTimeOffset RegisteredOn = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
 
-    private static Member CreateMember(string? phone = null) =>
-        new(new FullName("Gert-Jan", "De Vries"), new Email("gertjan@example.com"), phone, RegisteredOn);
+    private static Result<Member> Register(string? phone = null) =>
+        Member.Register(FullName.Create("Gert-Jan", "De Vries").ShouldSucceed(), Email.Create("gertjan@example.com").ShouldSucceed(), phone, RegisteredOn);
+
+    private static Member CreateMember(string? phone = null) => Register(phone).ShouldSucceed();
 
     [Test]
     public async Task Register_Should_CreateActiveMemberAndRaiseMemberRegistered()
@@ -41,9 +43,9 @@ public class MemberTests
     [Test]
     [Arguments("1234567")]
     [Arguments("1234567890123456")]
-    public async Task Given_PhoneWithInvalidDigitCount_Should_ThrowDomainException(string phone)
+    public async Task Given_PhoneWithInvalidDigitCount_Should_Fail(string phone)
     {
-        await Assert.That(() => CreateMember(phone)).Throws<DomainException>();
+        await Register(phone).ShouldFail().Is<ValidationError>();
     }
 
     [Test]
@@ -105,10 +107,10 @@ public class MemberTests
     {
         var member = CreateMember();
 
-        member.UpdateProfile(new FullName("Jan", "Jansen"), new Email("jan@example.com"), "010-1234567");
+        member.UpdateProfile(FullName.Create("Jan", "Jansen").ShouldSucceed(), Email.Create("jan@example.com").ShouldSucceed(), "010-1234567");
 
-        await Assert.That(member.Name).IsEqualTo(new FullName("Jan", "Jansen"));
-        await Assert.That(member.Email).IsEqualTo(new Email("jan@example.com"));
+        await Assert.That(member.Name).IsEqualTo(FullName.Create("Jan", "Jansen").ShouldSucceed());
+        await Assert.That(member.Email).IsEqualTo(Email.Create("jan@example.com").ShouldSucceed());
         await Assert.That(member.Phone).IsEqualTo("0101234567");
     }
 }

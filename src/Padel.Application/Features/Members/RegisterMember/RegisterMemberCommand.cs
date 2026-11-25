@@ -18,24 +18,32 @@ public sealed class RegisterMemberCommandHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : IRequestHandler<RegisterMemberCommand, MemberDto>
 {
-    public async Task<MemberDto> Handle(RegisterMemberCommand request, CancellationToken cancellationToken)
+    public async Task<Result<MemberDto>> Handle(RegisterMemberCommand request, CancellationToken cancellationToken)
     {
-        var email = new Email(request.Email);
+        var emailResult = Email.Create(request.Email);
+        if (emailResult is not Email email)
+        {
+            return emailResult.Error;
+        }
+
+        var nameResult = FullName.Create(request.FirstName, request.LastName);
+        if (nameResult is not FullName name)
+        {
+            return nameResult.Error;
+        }
 
         if (await members.GetByEmailAsync(email, cancellationToken) is not null)
         {
-            throw new ConflictException($"A member with email '{email}' already exists.");
+            return MemberErrors.EmailInUse(email);
         }
 
-        var member = new Member(
-            new FullName(request.FirstName, request.LastName),
-            email,
-            request.Phone,
-            timeProvider.GetUtcNow());
+        var memberResult = Member.Register(name, email, request.Phone, timeProvider.GetUtcNow());
+        if (memberResult is not Member member)
+        {
+            return memberResult.Error;
+        }
 
         members.Add(member);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return member.ToDto();
+        return await unitOfWork.SaveChangesAsync(cancellationToken) is Error saveError ? saveError : member.ToDto();
     }
 }

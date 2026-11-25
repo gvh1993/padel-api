@@ -17,11 +17,12 @@ internal sealed class SetCourtMaintenanceEndpoint : IEndpoint
             .WithDescription("Admin only.")
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
-    private static async Task<Ok<SetCourtMaintenanceResponse>> HandleAsync(
+    private static async Task<Results<Ok<SetCourtMaintenanceResponse>, ProblemHttpResult>> HandleAsync(
         Guid id,
         SetCourtMaintenanceRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(SetCourtMaintenanceResponse.From(await dispatcher.Send<SetCourtMaintenanceCommand, CourtDto>(
-            new SetCourtMaintenanceCommand(id, request.UnderMaintenance), cancellationToken)));
+        (await dispatcher.Send<SetCourtMaintenanceCommand, CourtDto>(
+            new SetCourtMaintenanceCommand(id, request.UnderMaintenance), cancellationToken))
+            .ToHttpResult(court => TypedResults.Ok(SetCourtMaintenanceResponse.From(court)));
 }

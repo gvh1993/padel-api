@@ -1,6 +1,9 @@
+using Padel.Domain.Common;
+
 namespace Padel.Application.Common.Messaging;
 
-public interface IRequestHandler<TRequest, TResponse> where TRequest : IRequest<TResponse>
+public interface IRequestHandler<TRequest, TValue> where TRequest : IRequest<TValue>
+    where TValue : notnull
 {
-    Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken);
+    Task<Result<TValue>> Handle(TRequest request, CancellationToken cancellationToken);
 }

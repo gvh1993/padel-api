@@ -11,14 +11,14 @@ public class BookingTests
     private static readonly DateTimeOffset Tomorrow = Now.AddDays(1);
 
     private static Member CreateMember() =>
-        new(new FullName("Gert-Jan", "De Vries"), new Email("gj@example.com"), null, Now.AddDays(-1));
+        Member.Register(FullName.Create("Gert-Jan", "De Vries").ShouldSucceed(), Email.Create("gj@example.com").ShouldSucceed(), null, Now.AddDays(-1)).ShouldSucceed();
 
-    private static Court CreateCourt() => new("Court A", "glass");
+    private static Court CreateCourt() => Court.Create("Court A", "glass").ShouldSucceed();
 
-    private static TimeSlot Slot(DateTimeOffset start) => new(start, start.AddHours(1));
+    private static TimeSlot Slot(DateTimeOffset start) => TimeSlot.Create(start, start.AddHours(1)).ShouldSucceed();
 
     private static Booking CreateBooking(Court? court = null, DateTimeOffset? start = null) =>
-        Booking.Create(CreateMember(), court ?? CreateCourt(), Slot(start ?? Tomorrow), Now);
+        Booking.Create(CreateMember(), court ?? CreateCourt(), Slot(start ?? Tomorrow), Now).ShouldSucceed();
 
     [Test]
     public async Task Create_Should_CreateConfirmedBookingAndRaiseBookingCreated()
@@ -26,7 +26,7 @@ public class BookingTests
         var member = CreateMember();
         var court = CreateCourt();
 
-        var booking = Booking.Create(member, court, Slot(Tomorrow), Now);
+        var booking = Booking.Create(member, court, Slot(Tomorrow), Now).ShouldSucceed();
 
         await Assert.That(booking.Status).IsEqualTo(BookingStatus.Confirmed);
         await Assert.That(booking.MemberId).IsEqualTo(member.Id);
@@ -37,44 +37,38 @@ public class BookingTests
     }
 
     [Test]
-    public async Task Given_SuspendedMember_Create_Should_ThrowDomainException()
+    public async Task Given_SuspendedMember_Create_Should_Fail()
     {
         var member = CreateMember();
         member.Suspend();
 
-        await Assert.That(() => Booking.Create(member, CreateCourt(), Slot(Tomorrow), Now))
-            .Throws<DomainException>()
-            .WithMessageContaining("suspended");
+        await Booking.Create(member, CreateCourt(), Slot(Tomorrow), Now).ShouldFail("suspended");
     }
 
     [Test]
-    public async Task Given_CourtInMaintenance_Create_Should_ThrowDomainException()
+    public async Task Given_CourtInMaintenance_Create_Should_Fail()
     {
         var court = CreateCourt();
         court.SetMaintenance(true);
 
-        await Assert.That(() => Booking.Create(CreateMember(), court, Slot(Tomorrow), Now))
-            .Throws<DomainException>()
-            .WithMessageContaining("not available");
+        await Booking.Create(CreateMember(), court, Slot(Tomorrow), Now).ShouldFail("not available");
     }
 
     [Test]
-    public async Task Given_RetiredCourt_Create_Should_ThrowDomainException()
+    public async Task Given_RetiredCourt_Create_Should_Fail()
     {
         var court = CreateCourt();
         court.Retire();
 
-        await Assert.That(() => Booking.Create(CreateMember(), court, Slot(Tomorrow), Now)).Throws<DomainException>();
+        await Booking.Create(CreateMember(), court, Slot(Tomorrow), Now).ShouldFail().Is<BusinessRuleError>();
     }
 
     [Test]
     [Arguments(0)]
     [Arguments(-60)]
-    public async Task Given_SlotThatDoesNotStartInTheFuture_Create_Should_ThrowDomainException(int offsetMinutes)
+    public async Task Given_SlotThatDoesNotStartInTheFuture_Create_Should_Fail(int offsetMinutes)
     {
-        await Assert.That(() => Booking.Create(CreateMember(), CreateCourt(), Slot(Now.AddMinutes(offsetMinutes)), Now))
-            .Throws<DomainException>()
-            .WithMessageContaining("future");
+        await Booking.Create(CreateMember(), CreateCourt(), Slot(Now.AddMinutes(offsetMinutes)), Now).ShouldFail("future");
     }
 
     [Test]
@@ -92,21 +86,21 @@ public class BookingTests
     }
 
     [Test]
-    public async Task Given_CancelledBooking_Cancel_Should_ThrowDomainException()
+    public async Task Given_CancelledBooking_Cancel_Should_Fail()
     {
         var booking = CreateBooking();
         booking.Cancel();
 
-        await Assert.That(() => booking.Cancel()).Throws<DomainException>();
+        await booking.Cancel().ShouldFail();
     }
 
     [Test]
-    public async Task Given_CompletedBooking_Cancel_Should_ThrowDomainException()
+    public async Task Given_CompletedBooking_Cancel_Should_Fail()
     {
         var booking = CreateBooking();
         booking.Complete(Tomorrow);
 
-        await Assert.That(() => booking.Cancel()).Throws<DomainException>();
+        await booking.Cancel().ShouldFail();
     }
 
     [Test]
@@ -134,31 +128,29 @@ public class BookingTests
     }
 
     [Test]
-    public async Task Given_BookingThatHasNotStarted_Complete_Should_ThrowDomainException()
+    public async Task Given_BookingThatHasNotStarted_Complete_Should_Fail()
     {
         var booking = CreateBooking();
 
-        await Assert.That(() => booking.Complete(Tomorrow.AddMinutes(-1)))
-            .Throws<DomainException>()
-            .WithMessageContaining("before it has started");
+        await booking.Complete(Tomorrow.AddMinutes(-1)).ShouldFail("before it has started");
     }
 
     [Test]
-    public async Task Given_NoShowBooking_Complete_Should_ThrowDomainException()
+    public async Task Given_NoShowBooking_Complete_Should_Fail()
     {
         var booking = CreateBooking();
         booking.MarkAsNoShow(Tomorrow);
 
-        await Assert.That(() => booking.Complete(Tomorrow)).Throws<DomainException>();
+        await booking.Complete(Tomorrow).ShouldFail();
     }
 
     [Test]
-    public async Task Given_CancelledBooking_MarkAsNoShow_Should_ThrowDomainException()
+    public async Task Given_CancelledBooking_MarkAsNoShow_Should_Fail()
     {
         var booking = CreateBooking();
         booking.Cancel();
 
-        await Assert.That(() => booking.MarkAsNoShow(Tomorrow)).Throws<DomainException>();
+        await booking.MarkAsNoShow(Tomorrow).ShouldFail();
     }
 
     [Test]

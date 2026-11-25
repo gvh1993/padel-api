@@ -1,5 +1,6 @@
 using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
+using Padel.Domain.Common;
 using Padel.Domain.Members;
 
 namespace Padel.Application.Features.Members;
@@ -10,14 +11,19 @@ public sealed class SuspendMemberCommandHandler(
     IMemberRepository members,
     IUnitOfWork unitOfWork) : IRequestHandler<SuspendMemberCommand, MemberDto>
 {
-    public async Task<MemberDto> Handle(SuspendMemberCommand request, CancellationToken cancellationToken)
+    public async Task<Result<MemberDto>> Handle(SuspendMemberCommand request, CancellationToken cancellationToken)
     {
-        var member = await members.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw NotFoundException.For<Member>(request.Id);
+        var member = await members.GetByIdAsync(request.Id, cancellationToken);
+        if (member is null)
+        {
+            return ApplicationErrors.NotFound<Member>(request.Id);
+        }
 
-        member.Suspend(request.Reason);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (member.Suspend(request.Reason) is Error suspendedError)
+        {
+            return suspendedError;
+        }
 
-        return member.ToDto();
+        return await unitOfWork.SaveChangesAsync(cancellationToken) is Error saveError ? saveError : member.ToDto();
     }
 }

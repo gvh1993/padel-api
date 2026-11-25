@@ -1,16 +1,18 @@
 using Microsoft.Extensions.DependencyInjection;
+using Padel.Domain.Common;
 
 namespace Padel.Application.Common.Messaging;
 
 public sealed class RequestDispatcher(IServiceProvider provider) : IRequestDispatcher
 {
-    public async Task<TResponse> Send<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
-        where TRequest : IRequest<TResponse>
+    public async Task<Result<TValue>> Send<TRequest, TValue>(TRequest request, CancellationToken cancellationToken = default)
+        where TRequest : IRequest<TValue>
+        where TValue : notnull
     {
-        var handler = provider.GetRequiredService<IRequestHandler<TRequest, TResponse>>();
-        var behaviors = provider.GetServices<IPipelineBehavior<TRequest, TResponse>>().ToList();
+        var handler = provider.GetRequiredService<IRequestHandler<TRequest, TValue>>();
+        var behaviors = provider.GetServices<IPipelineBehavior<TRequest, TValue>>().ToList();
 
-        RequestHandlerDelegate<TResponse> pipeline = () => handler.Handle(request, cancellationToken);
+        RequestHandlerDelegate<TValue> pipeline = () => handler.Handle(request, cancellationToken);
 
         foreach (var behavior in behaviors.AsEnumerable().Reverse())
         {

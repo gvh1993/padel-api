@@ -18,11 +18,11 @@ internal sealed class SuspendMemberEndpoint : IEndpoint
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Ok<SuspendMemberResponse>> HandleAsync(
+    private static async Task<Results<Ok<SuspendMemberResponse>, ProblemHttpResult>> HandleAsync(
         Guid id,
         SuspendMemberRequest? request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(SuspendMemberResponse.From(
-            await dispatcher.Send<SuspendMemberCommand, MemberDto>(new SuspendMemberCommand(id, request?.Reason), cancellationToken)));
+        (await dispatcher.Send<SuspendMemberCommand, MemberDto>(new SuspendMemberCommand(id, request?.Reason), cancellationToken))
+            .ToHttpResult(member => TypedResults.Ok(SuspendMemberResponse.From(member)));
 }

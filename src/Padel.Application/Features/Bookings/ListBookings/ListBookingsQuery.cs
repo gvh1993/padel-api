@@ -2,6 +2,7 @@ using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
 using Padel.Application.Common.Querying;
 using Padel.Domain.Bookings;
+using Padel.Domain.Common;
 
 namespace Padel.Application.Features.Bookings;
 
@@ -25,9 +26,20 @@ public sealed class ListBookingsQueryHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser) : IRequestHandler<ListBookingsQuery, PagedResult<BookingDto>>
 {
-    public async Task<PagedResult<BookingDto>> Handle(ListBookingsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<BookingDto>>> Handle(ListBookingsQuery request, CancellationToken cancellationToken)
     {
-        var memberId = ResolveMemberFilter(request.MemberId);
+        // Admins may filter on any member; other users only see their own bookings.
+        var memberId = request.MemberId;
+        if (!currentUser.IsAdmin)
+        {
+            if (currentUser.MemberId is not { } ownMemberId || (memberId.HasValue && memberId != ownMemberId))
+            {
+                return ApplicationErrors.Forbidden;
+            }
+
+            memberId = ownMemberId;
+        }
+
         var courtId = request.CourtId;
 
         var options = ListOptions<Booking>.From(request, BookingSorting.Map)
@@ -37,21 +49,5 @@ public sealed class ListBookingsQueryHandler(
 
         var page = await bookings.ListAsync(options, cancellationToken);
         return page.Map(booking => booking.ToDto());
-    }
-
-    private Guid? ResolveMemberFilter(Guid? requestedMemberId)
-    {
-        if (currentUser.IsAdmin)
-        {
-            return requestedMemberId;
-        }
-
-        var ownMemberId = currentUser.MemberId ?? throw new ForbiddenException();
-        if (requestedMemberId.HasValue && requestedMemberId != ownMemberId)
-        {
-            throw new ForbiddenException();
-        }
-
-        return ownMemberId;
     }
 }

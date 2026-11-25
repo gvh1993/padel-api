@@ -1,25 +1,35 @@
 namespace Padel.Domain.Common;
 
 /// <summary>
-/// Normalizes optional free-text reasons (suspension, cancellation).
+/// An optional free-text reason (suspension, cancellation), trimmed; blank means no reason.
 /// </summary>
-public static class Reason
+public sealed record Reason
 {
     public const int MaxLength = 500;
 
-    public static string? Normalize(string? reason)
+    public static readonly Reason None = new(text: null);
+
+    private Reason(string? text)
     {
-        if (string.IsNullOrWhiteSpace(reason))
+        Text = text;
+    }
+
+    /// <summary>The trimmed reason, or <c>null</c> when none was given.</summary>
+    public string? Text { get; }
+
+    public static Result<Reason> Create(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
         {
-            return null;
+            return None;
         }
 
-        var trimmed = reason.Trim();
+        var trimmed = text.Trim();
         if (trimmed.Length > MaxLength)
         {
-            throw new DomainException($"Reason cannot be longer than {MaxLength} characters.");
+            return Error.Validation("Reason.TooLong", $"Reason cannot be longer than {MaxLength} characters.");
         }
 
-        return trimmed;
+        return new Reason(trimmed);
     }
 }

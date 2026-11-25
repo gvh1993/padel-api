@@ -1,5 +1,6 @@
 using Padel.Application.Common;
 using Padel.Application.Features.Members;
+using Padel.Domain.Common;
 using Padel.Domain.Members;
 using Padel.UnitTests.Fakes;
 using TUnit.Assertions.Enums;
@@ -22,7 +23,7 @@ public class MemberHandlerTests
     {
         var result = await RegisterHandler.Handle(
             new RegisterMemberCommand { FirstName = "Gert-Jan", LastName = "De Vries", Email = "GJ@Example.com", Phone = "010 123 4567" },
-            CancellationToken.None);
+            CancellationToken.None).ShouldSucceed();
 
         var member = _fixture.Members.Store.Single();
         await Assert.That(result.Id).IsEqualTo(member.Id);
@@ -34,15 +35,15 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_EmailAlreadyInUse_RegisterMember_Should_ThrowConflictException()
+    public async Task Given_EmailAlreadyInUse_RegisterMember_Should_FailWithConflict()
     {
         _fixture.AddMember("jan@example.com");
 
-        var exception = await Assert.ThrowsAsync<ConflictException>(() => RegisterHandler.Handle(
+        var error = await RegisterHandler.Handle(
             new RegisterMemberCommand { FirstName = "J", LastName = "J", Email = "JAN@example.com" },
-            CancellationToken.None));
+            CancellationToken.None).ShouldFail().Is<ConflictError>();
 
-        await Assert.That(exception!.Message).Contains("already exists");
+        await Assert.That(error.Description).Contains("already exists");
         await Assert.That(_fixture.Members.Store).HasSingleItem();
         await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
     }
@@ -54,7 +55,7 @@ public class MemberHandlerTests
 
         var result = await UpdateHandler.Handle(
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Jan", LastName = "Jansen", Email = "jan@example.com" },
-            CancellationToken.None);
+            CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.FirstName).IsEqualTo("Jan");
         await Assert.That(result.Email).IsEqualTo("jan@example.com");
@@ -68,31 +69,31 @@ public class MemberHandlerTests
 
         var result = await UpdateHandler.Handle(
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Gert", LastName = "De Vries", Email = "gj@example.com" },
-            CancellationToken.None);
+            CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.FirstName).IsEqualTo("Gert");
     }
 
     [Test]
-    public async Task Given_EmailOfAnotherMember_UpdateMemberProfile_Should_ThrowConflictException()
+    public async Task Given_EmailOfAnotherMember_UpdateMemberProfile_Should_FailWithConflict()
     {
         var member = _fixture.AddMember("gj@example.com");
         _fixture.AddMember("jan@example.com");
 
-        await Assert.ThrowsAsync<ConflictException>(() => UpdateHandler.Handle(
+        await UpdateHandler.Handle(
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Gert", LastName = "De Vries", Email = "jan@example.com" },
-            CancellationToken.None));
+            CancellationToken.None).ShouldFail().Is<ConflictError>();
     }
 
     [Test]
-    public async Task Given_CallerIsAnotherMember_UpdateMemberProfile_Should_ThrowForbiddenException()
+    public async Task Given_CallerIsAnotherMember_UpdateMemberProfile_Should_FailWithForbidden()
     {
         var member = _fixture.AddMember();
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => UpdateHandler.Handle(
+        await UpdateHandler.Handle(
             new UpdateMemberProfileCommand { Id = member.Id, FirstName = "Jan", LastName = "Jansen", Email = "jan@example.com" },
-            CancellationToken.None));
+            CancellationToken.None).ShouldFail().Is<ForbiddenError>();
     }
 
     [Test]
@@ -100,7 +101,7 @@ public class MemberHandlerTests
     {
         var member = _fixture.AddMember();
 
-        var result = await SuspendHandler.Handle(new SuspendMemberCommand(member.Id, "misbehaving"), CancellationToken.None);
+        var result = await SuspendHandler.Handle(new SuspendMemberCommand(member.Id, "misbehaving"), CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.Status).IsEqualTo(MemberStatus.Suspended);
         await Assert.That(result.SuspensionReason).IsEqualTo("misbehaving");
@@ -108,10 +109,9 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownMember_SuspendMember_Should_ThrowNotFoundException()
+    public async Task Given_UnknownMember_SuspendMember_Should_FailWithNotFound()
     {
-        await Assert.ThrowsAsync<NotFoundException>(() =>
-            SuspendHandler.Handle(new SuspendMemberCommand(Guid.NewGuid(), null), CancellationToken.None));
+        await SuspendHandler.Handle(new SuspendMemberCommand(Guid.NewGuid(), null), CancellationToken.None).ShouldFail().Is<NotFoundError>();
 
         await Assert.That(_fixture.UnitOfWork.SaveCount).IsEqualTo(0);
     }
@@ -123,7 +123,7 @@ public class MemberHandlerTests
         member.Suspend();
         member.ClearDomainEvents();
 
-        var result = await ReactivateHandler.Handle(new ReactivateMemberCommand(member.Id), CancellationToken.None);
+        var result = await ReactivateHandler.Handle(new ReactivateMemberCommand(member.Id), CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.Status).IsEqualTo(MemberStatus.Active);
         await Assert.That(_fixture.UnitOfWork.PublishedEvents.Single()).IsTypeOf<MemberReactivated>();
@@ -135,24 +135,24 @@ public class MemberHandlerTests
         var member = _fixture.AddMember();
         _fixture.CurrentUser = FakeCurrentUser.ForMember(member.Id);
 
-        var result = await GetHandler.Handle(new GetMemberQuery(member.Id), CancellationToken.None);
+        var result = await GetHandler.Handle(new GetMemberQuery(member.Id), CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.LastName).IsEqualTo("De Vries");
     }
 
     [Test]
-    public async Task Given_CallerIsAnotherMember_GetMember_Should_ThrowForbiddenException()
+    public async Task Given_CallerIsAnotherMember_GetMember_Should_FailWithForbidden()
     {
         var member = _fixture.AddMember();
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
 
-        await Assert.ThrowsAsync<ForbiddenException>(() => GetHandler.Handle(new GetMemberQuery(member.Id), CancellationToken.None));
+        await GetHandler.Handle(new GetMemberQuery(member.Id), CancellationToken.None).ShouldFail().Is<ForbiddenError>();
     }
 
     [Test]
-    public async Task Given_UnknownMember_GetMember_Should_ThrowNotFoundException()
+    public async Task Given_UnknownMember_GetMember_Should_FailWithNotFound()
     {
-        await Assert.ThrowsAsync<NotFoundException>(() => GetHandler.Handle(new GetMemberQuery(Guid.NewGuid()), CancellationToken.None));
+        await GetHandler.Handle(new GetMemberQuery(Guid.NewGuid()), CancellationToken.None).ShouldFail().Is<NotFoundError>();
     }
 
     [Test]
@@ -162,7 +162,7 @@ public class MemberHandlerTests
         _fixture.AddMember("a@example.com", "Anna", "Visser");
         _fixture.AddMember("b@example.com", "Bram", "Bakker");
 
-        var result = await ListHandler.Handle(new ListMembersQuery(), CancellationToken.None);
+        var result = await ListHandler.Handle(new ListMembersQuery(), CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.Items.Select(m => m.FirstName)).IsEquivalentTo(["Bram", "Cees", "Anna"], CollectionOrdering.Matching);
     }
@@ -173,7 +173,7 @@ public class MemberHandlerTests
         _fixture.AddMember("a@example.com", "Anna", "Visser");
         _fixture.AddMember("b@example.com", "Bram", "Bakker");
 
-        var result = await ListHandler.Handle(new ListMembersQuery { Sort = "-email" }, CancellationToken.None);
+        var result = await ListHandler.Handle(new ListMembersQuery { Sort = "-email" }, CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.Items.Select(m => m.Email)).IsEquivalentTo(["b@example.com", "a@example.com"], CollectionOrdering.Matching);
     }
@@ -188,7 +188,7 @@ public class MemberHandlerTests
 
         var result = await ListHandler.Handle(
             new ListMembersQuery { Status = MemberStatus.Active, Search = "ANNA" },
-            CancellationToken.None);
+            CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.Items).HasSingleItem();
         await Assert.That(result.Items[0].FirstName).IsEqualTo("Annabel");
@@ -202,7 +202,7 @@ public class MemberHandlerTests
             _fixture.AddMember($"m{i}@example.com", $"Member{i}", "Test");
         }
 
-        var result = await ListHandler.Handle(new ListMembersQuery { Page = 2, PageSize = 3, Sort = "firstName" }, CancellationToken.None);
+        var result = await ListHandler.Handle(new ListMembersQuery { Page = 2, PageSize = 3, Sort = "firstName" }, CancellationToken.None).ShouldSucceed();
 
         await Assert.That(result.Items.Select(m => m.FirstName)).IsEquivalentTo(["Member3", "Member4"], CollectionOrdering.Matching);
         await Assert.That(result.TotalCount).IsEqualTo(5);

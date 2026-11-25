@@ -44,10 +44,8 @@ public class SortMapTests
     }
 
     [Test]
-    public async Task Given_UnknownField_Resolve_Should_ThrowRequestValidationException()
+    public async Task Given_UnknownField_Resolve_Should_ThrowBecauseTheValidatorMustRejectItFirst()
     {
-        var exception = await Assert.That(() => Map.Resolve("secret")).Throws<RequestValidationException>();
-
-        await Assert.That(exception!.Errors.Keys).Contains("sort");
+        await Assert.That(() => Map.Resolve("secret")).Throws<InvalidOperationException>().WithMessageContaining("secret");
     }
 }

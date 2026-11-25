@@ -16,6 +16,7 @@ internal sealed class GetCourtEndpoint : IEndpoint
             .WithSummary("Gets a court.")
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Ok<GetCourtResponse>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        TypedResults.Ok(GetCourtResponse.From(await dispatcher.Send<GetCourtQuery, CourtDto>(new GetCourtQuery(id), cancellationToken)));
+    private static async Task<Results<Ok<GetCourtResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<GetCourtQuery, CourtDto>(new GetCourtQuery(id), cancellationToken))
+            .ToHttpResult(court => TypedResults.Ok(GetCourtResponse.From(court)));
 }

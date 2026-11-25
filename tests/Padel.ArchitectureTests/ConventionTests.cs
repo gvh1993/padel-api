@@ -8,6 +8,14 @@ namespace Padel.ArchitectureTests;
 
 public class ConventionTests
 {
+    /// <summary>Expected failures are <c>Result</c>s with an <c>Error</c>, never custom exceptions.</summary>
+    [Test]
+    public Task Layers_Should_NotDefineExceptions() =>
+        Types.InAssemblies([Layers.Domain, Layers.Application, Layers.Infrastructure, Layers.Api])
+            .ShouldNot()
+            .Inherit(typeof(Exception))
+            .ShouldPass();
+
     [Test]
     public Task RequestHandlers_Should_BeSealedAndNamedHandler() =>
         Types.InAssembly(Layers.Application)

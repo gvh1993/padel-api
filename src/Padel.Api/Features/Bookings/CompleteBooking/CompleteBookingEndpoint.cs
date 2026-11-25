@@ -17,7 +17,7 @@ internal sealed class CompleteBookingEndpoint : IEndpoint
             .WithDescription("Admin only. Only after the slot has started.")
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
-    private static async Task<Ok<CompleteBookingResponse>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
-        TypedResults.Ok(CompleteBookingResponse.From(
-            await dispatcher.Send<CompleteBookingCommand, BookingDto>(new CompleteBookingCommand(id), cancellationToken)));
+    private static async Task<Results<Ok<CompleteBookingResponse>, ProblemHttpResult>> HandleAsync(Guid id, IRequestDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send<CompleteBookingCommand, BookingDto>(new CompleteBookingCommand(id), cancellationToken))
+            .ToHttpResult(booking => TypedResults.Ok(CompleteBookingResponse.From(booking)));
 }

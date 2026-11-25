@@ -1,5 +1,6 @@
 using Padel.Application.Common.Messaging;
 using Padel.Application.Common.Querying;
+using Padel.Domain.Common;
 using Padel.Domain.Courts;
 
 namespace Padel.Application.Features.Courts;
@@ -18,7 +19,7 @@ public sealed record ListCourtsQuery : ListQuery, IRequest<PagedResult<CourtDto>
 public sealed class ListCourtsQueryHandler(ICourtRepository courts)
     : IRequestHandler<ListCourtsQuery, PagedResult<CourtDto>>
 {
-    public async Task<PagedResult<CourtDto>> Handle(ListCourtsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<CourtDto>>> Handle(ListCourtsQuery request, CancellationToken cancellationToken)
     {
         var status = request.Status;
         var surface = request.Surface?.Trim().ToLowerInvariant();

@@ -47,6 +47,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
         var problem = await response.ReadProblemAsync();
         await Assert.That(problem.Detail).Contains("already exists");
+        await Assert.That(problem.ErrorCode).IsEqualTo("Member.EmailInUse");
     }
 
     [Test]

@@ -18,11 +18,11 @@ internal sealed class RenameCourtEndpoint : IEndpoint
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound);
 
-    private static async Task<Ok<RenameCourtResponse>> HandleAsync(
+    private static async Task<Results<Ok<RenameCourtResponse>, ProblemHttpResult>> HandleAsync(
         Guid id,
         RenameCourtRequest request,
         IRequestDispatcher dispatcher,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(RenameCourtResponse.From(
-            await dispatcher.Send<RenameCourtCommand, CourtDto>(new RenameCourtCommand(id, request.Name), cancellationToken)));
+        (await dispatcher.Send<RenameCourtCommand, CourtDto>(new RenameCourtCommand(id, request.Name), cancellationToken))
+            .ToHttpResult(court => TypedResults.Ok(RenameCourtResponse.From(court)));
 }

@@ -6,13 +6,6 @@ namespace Padel.Domain.Bookings;
 
 public class Booking : EntityWithDomainEvents
 {
-    public Guid MemberId { get; private set; }
-    public Guid CourtId { get; private set; }
-    public TimeSlot Slot { get; private set; } = null!;
-    public BookingStatus Status { get; private set; }
-    public string? CancellationReason { get; private set; }
-    public DateTimeOffset CreatedOn { get; private set; }
-
     private Booking(Guid memberId, Guid courtId, TimeSlot slot, DateTimeOffset createdOn)
     {
         MemberId = memberId;
@@ -28,57 +21,79 @@ public class Booking : EntityWithDomainEvents
     {
     }
 
-    public static Booking Create(Member member, Court court, TimeSlot slot, DateTimeOffset now)
+    public Guid MemberId { get; private set; }
+    public Guid CourtId { get; private set; }
+    public TimeSlot Slot { get; private set; } = null!;
+    public BookingStatus Status { get; private set; }
+    public string? CancellationReason { get; private set; }
+    public DateTimeOffset CreatedOn { get; private set; }
+
+    public static Result<Booking> Create(Member member, Court court, TimeSlot slot, DateTimeOffset now)
     {
         if (!member.CanBook)
         {
-            throw new DomainException("A suspended member cannot make bookings.");
+            return BookingErrors.MemberSuspended;
         }
 
         if (!court.CanBeBooked)
         {
-            throw new DomainException($"Court '{court.Name}' is not available for booking ({court.Status}).");
+            return BookingErrors.CourtNotAvailable(court.Name, court.Status);
         }
 
         if (slot.Start <= now)
         {
-            throw new DomainException("A booking must start in the future.");
+            return BookingErrors.NotInFuture;
         }
 
         return new Booking(member.Id, court.Id, slot, now);
     }
 
-    public void Cancel(string? reason = null)
+    public Result Cancel(string? reason = null)
     {
         if (Status == BookingStatus.Cancelled)
         {
-            throw new DomainException("Booking is already cancelled.");
+            return BookingErrors.AlreadyCancelled;
         }
 
         if (Status is BookingStatus.Completed or BookingStatus.NoShow)
         {
-            throw new DomainException($"A booking with status {Status} cannot be cancelled.");
+            return BookingErrors.CannotCancel(Status);
+        }
+
+        var cancellationReason = Reason.Create(reason);
+        if (cancellationReason is not Reason validReason)
+        {
+            return cancellationReason.Error;
         }
 
         Status = BookingStatus.Cancelled;
-        CancellationReason = Reason.Normalize(reason);
+        CancellationReason = validReason.Text;
         AddDomainEvent(new BookingCancelled(Id, CancellationReason));
+        return Success.Instance;
     }
 
-    public void Complete(DateTimeOffset now)
+    public Result Complete(DateTimeOffset now)
     {
-        EnsureConfirmedAndStarted(now, "completed");
+        if (EnsureConfirmedAndStarted(now, "completed") is Error error)
+        {
+            return error;
+        }
 
         Status = BookingStatus.Completed;
         AddDomainEvent(new BookingCompleted(Id));
+        return Success.Instance;
     }
 
-    public void MarkAsNoShow(DateTimeOffset now)
+    public Result MarkAsNoShow(DateTimeOffset now)
     {
-        EnsureConfirmedAndStarted(now, "marked as no-show");
+        if (EnsureConfirmedAndStarted(now, "marked as no-show") is Error error)
+        {
+            return error;
+        }
 
         Status = BookingStatus.NoShow;
         AddDomainEvent(new BookingNoShow(Id));
+        return Success.Instance;
     }
 
     public bool Overlaps(Booking other)
@@ -96,16 +111,18 @@ public class Booking : EntityWithDomainEvents
         return Slot.Overlaps(other.Slot);
     }
 
-    private void EnsureConfirmedAndStarted(DateTimeOffset now, string action)
+    private Result EnsureConfirmedAndStarted(DateTimeOffset now, string action)
     {
         if (Status != BookingStatus.Confirmed)
         {
-            throw new DomainException($"Only confirmed bookings can be {action}.");
+            return BookingErrors.NotConfirmed(action);
         }
 
         if (now < Slot.Start)
         {
-            throw new DomainException($"A booking cannot be {action} before it has started.");
+            return BookingErrors.NotStarted(action);
         }
+
+        return Success.Instance;
     }
 }

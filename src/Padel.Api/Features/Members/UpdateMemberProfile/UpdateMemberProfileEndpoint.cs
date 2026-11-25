@@ -16,7 +16,7 @@ internal sealed class UpdateMemberProfileEndpoint : IEndpoint
             .ProducesValidationProblems()
             .ProducesProblems(StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
 
-    private static async Task<Ok<UpdateMemberProfileResponse>> HandleAsync(
+    private static async Task<Results<Ok<UpdateMemberProfileResponse>, ProblemHttpResult>> HandleAsync(
         Guid id,
         UpdateMemberProfileRequest request,
         IRequestDispatcher dispatcher,
@@ -31,7 +31,7 @@ internal sealed class UpdateMemberProfileEndpoint : IEndpoint
             Phone = request.Phone,
         };
 
-        return TypedResults.Ok(UpdateMemberProfileResponse.From(
-            await dispatcher.Send<UpdateMemberProfileCommand, MemberDto>(command, cancellationToken)));
+        return (await dispatcher.Send<UpdateMemberProfileCommand, MemberDto>(command, cancellationToken))
+            .ToHttpResult(member => TypedResults.Ok(UpdateMemberProfileResponse.From(member)));
     }
 }

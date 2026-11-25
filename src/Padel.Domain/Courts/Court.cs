@@ -6,14 +6,10 @@ public class Court : EntityWithDomainEvents
 {
     public const int MaxLength = 80;
 
-    public string Name { get; private set; } = null!;
-    public string Surface { get; private set; } = null!;
-    public CourtStatus Status { get; private set; }
-
-    public Court(string name, string surface)
+    private Court(string name, string surface)
     {
-        Name = Normalize(name, "Court name");
-        Surface = Normalize(surface, "Surface");
+        Name = name;
+        Surface = surface;
         Status = CourtStatus.Available;
 
         AddDomainEvent(new CourtCreated(Id));
@@ -23,23 +19,53 @@ public class Court : EntityWithDomainEvents
     {
     }
 
+    public string Name { get; private set; } = null!;
+    public string Surface { get; private set; } = null!;
+    public CourtStatus Status { get; private set; }
+
     public bool CanBeBooked => Status == CourtStatus.Available;
 
-    public void Rename(string name)
+    public static Result<Court> Create(string? name, string? surface)
     {
-        Name = Normalize(name, "Court name");
+        var normalizedName = Normalize(name, "Court name");
+        if (normalizedName is not string validName)
+        {
+            return normalizedName.Error;
+        }
+
+        var normalizedSurface = Normalize(surface, "Surface");
+        if (normalizedSurface is not string validSurface)
+        {
+            return normalizedSurface.Error;
+        }
+
+        return new Court(validName, validSurface);
     }
 
-    public void SetMaintenance(bool isUnderMaintenance)
+    public Result Rename(string? name)
+    {
+        var normalizedName = Normalize(name, "Court name");
+        if (normalizedName is not string validName)
+        {
+            return normalizedName.Error;
+        }
+
+        Name = validName;
+        return Success.Instance;
+    }
+
+    public Result SetMaintenance(bool isUnderMaintenance)
     {
         if (Status == CourtStatus.Retired)
         {
-            throw new DomainException("A retired court cannot change maintenance state.");
+            return CourtErrors.RetiredCannotChangeMaintenance;
         }
 
         Status = isUnderMaintenance ? CourtStatus.Maintenance : CourtStatus.Available;
+        return Success.Instance;
     }
 
+    /// <summary>Retires the court permanently. Retiring a retired court has no effect.</summary>
     public void Retire()
     {
         if (Status == CourtStatus.Retired)
@@ -51,17 +77,17 @@ public class Court : EntityWithDomainEvents
         AddDomainEvent(new CourtRetired(Id));
     }
 
-    private static string Normalize(string value, string label)
+    private static Result<string> Normalize(string? value, string label)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new DomainException($"{label} is required.");
+            return CourtErrors.Required(label);
         }
 
         var trimmed = value.Trim();
         if (trimmed.Length > MaxLength)
         {
-            throw new DomainException($"{label} cannot be longer than {MaxLength} characters.");
+            return CourtErrors.TooLong(label);
         }
 
         return trimmed;

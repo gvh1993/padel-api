@@ -1,6 +1,7 @@
 using Padel.Application.Common;
 using Padel.Application.Common.Messaging;
 using Padel.Domain.Bookings;
+using Padel.Domain.Common;
 
 namespace Padel.Application.Features.Bookings;
 
@@ -11,14 +12,19 @@ public sealed class MarkBookingNoShowCommandHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : IRequestHandler<MarkBookingNoShowCommand, BookingDto>
 {
-    public async Task<BookingDto> Handle(MarkBookingNoShowCommand request, CancellationToken cancellationToken)
+    public async Task<Result<BookingDto>> Handle(MarkBookingNoShowCommand request, CancellationToken cancellationToken)
     {
-        var booking = await bookings.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw NotFoundException.For<Booking>(request.Id);
+        var booking = await bookings.GetByIdAsync(request.Id, cancellationToken);
+        if (booking is null)
+        {
+            return ApplicationErrors.NotFound<Booking>(request.Id);
+        }
 
-        booking.MarkAsNoShow(timeProvider.GetUtcNow());
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (booking.MarkAsNoShow(timeProvider.GetUtcNow()) is Error changedError)
+        {
+            return changedError;
+        }
 
-        return booking.ToDto();
+        return await unitOfWork.SaveChangesAsync(cancellationToken) is Error saveError ? saveError : booking.ToDto();
     }
 }

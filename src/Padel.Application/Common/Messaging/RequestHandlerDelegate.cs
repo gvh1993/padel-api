@@ -1,3 +1,5 @@
+using Padel.Domain.Common;
+
 namespace Padel.Application.Common.Messaging;
 
-public delegate Task<TResponse> RequestHandlerDelegate<TResponse>();
+public delegate Task<Result<TValue>> RequestHandlerDelegate<TValue>() where TValue : notnull;

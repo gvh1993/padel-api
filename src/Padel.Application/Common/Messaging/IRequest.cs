@@ -1,5 +1,6 @@
 namespace Padel.Application.Common.Messaging;
 
-public interface IRequest<TResponse>
+/// <summary>A command or query whose handler returns a <c>Result&lt;TValue&gt;</c>.</summary>
+public interface IRequest<TValue> where TValue : notnull
 {
 }

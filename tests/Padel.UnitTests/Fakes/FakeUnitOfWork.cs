@@ -5,6 +5,7 @@ namespace Padel.UnitTests.Fakes;
 
 /// <summary>
 /// Records saves and collects (then clears) the domain events of all entities in the given stores.
+/// Set <see cref="FailWith"/> to simulate a failing save (e.g. a concurrency conflict).
 /// </summary>
 public sealed class FakeUnitOfWork(params IEnumerable<EntityWithDomainEvents>[] stores) : IUnitOfWork
 {
@@ -12,8 +13,15 @@ public sealed class FakeUnitOfWork(params IEnumerable<EntityWithDomainEvents>[] 
 
     public List<IDomainEvent> PublishedEvents { get; } = [];
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    public Error? FailWith { get; set; }
+
+    public Task<Result> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        if (FailWith is { } error)
+        {
+            return Task.FromResult<Result>(error);
+        }
+
         SaveCount++;
 
         foreach (var entity in stores.SelectMany(store => store))
@@ -22,6 +30,6 @@ public sealed class FakeUnitOfWork(params IEnumerable<EntityWithDomainEvents>[] 
             entity.ClearDomainEvents();
         }
 
-        return Task.CompletedTask;
+        return Task.FromResult<Result>(Success.Instance);
     }
 }

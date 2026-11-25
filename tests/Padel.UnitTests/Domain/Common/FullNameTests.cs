@@ -7,7 +7,7 @@ public class FullNameTests
     [Test]
     public async Task Create_Should_TrimBothParts()
     {
-        var name = new FullName("  Gert-Jan ", "  De Vries  ");
+        var name = FullName.Create("  Gert-Jan ", "  De Vries  ").ShouldSucceed();
 
         await Assert.That(name.First).IsEqualTo("Gert-Jan");
         await Assert.That(name.Last).IsEqualTo("De Vries");
@@ -17,24 +17,24 @@ public class FullNameTests
     [Test]
     public async Task Given_SameParts_Should_BeEqual()
     {
-        await Assert.That(new FullName("Jan", "Jansen")).IsEqualTo(new FullName(" Jan", "Jansen "));
+        await Assert.That(FullName.Create("Jan", "Jansen").ShouldSucceed()).IsEqualTo(FullName.Create(" Jan", "Jansen ").ShouldSucceed());
     }
 
     [Test]
     [Arguments("", "Vries")]
     [Arguments("Smith", "")]
     [Arguments("  ", "  ")]
-    public async Task Given_BlankPart_Should_ThrowDomainException(string first, string last)
+    public async Task Given_BlankPart_Should_Fail(string first, string last)
     {
-        await Assert.That(() => new FullName(first, last)).Throws<DomainException>();
+        await FullName.Create(first, last).ShouldFail();
     }
 
     [Test]
-    public async Task Given_PartLongerThanMaxLength_Should_ThrowDomainException()
+    public async Task Given_PartLongerThanMaxLength_Should_Fail()
     {
         var tooLong = new string('a', FullName.MaxLength + 1);
 
-        await Assert.That(() => new FullName(tooLong, "Vries")).Throws<DomainException>();
-        await Assert.That(() => new FullName("Smith", tooLong)).Throws<DomainException>();
+        await FullName.Create(tooLong, "Vries").ShouldFail();
+        await FullName.Create("Smith", tooLong).ShouldFail();
     }
 }

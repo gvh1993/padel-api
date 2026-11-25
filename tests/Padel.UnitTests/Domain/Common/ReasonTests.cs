@@ -8,20 +8,20 @@ public class ReasonTests
     [Arguments(null)]
     [Arguments("")]
     [Arguments("   ")]
-    public async Task Given_BlankReason_Should_ReturnNull(string? reason)
+    public async Task Given_BlankReason_Create_Should_ReturnNone(string? reason)
     {
-        await Assert.That(Reason.Normalize(reason)).IsNull();
+        await Assert.That(Reason.Create(reason).ShouldSucceed()).IsEqualTo(Reason.None);
     }
 
     [Test]
-    public async Task Normalize_Should_TrimTheReason()
+    public async Task Create_Should_TrimTheReason()
     {
-        await Assert.That(Reason.Normalize("  rain  ")).IsEqualTo("rain");
+        await Assert.That(Reason.Create("  rain  ").ShouldSucceed().Text).IsEqualTo("rain");
     }
 
     [Test]
-    public async Task Given_ReasonLongerThanMaxLength_Should_ThrowDomainException()
+    public async Task Given_ReasonLongerThanMaxLength_Should_Fail()
     {
-        await Assert.That(() => Reason.Normalize(new string('x', Reason.MaxLength + 1))).Throws<DomainException>();
+        await Reason.Create(new string('x', Reason.MaxLength + 1)).ShouldFail();
     }
 }

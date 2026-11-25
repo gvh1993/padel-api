@@ -1,5 +1,6 @@
 using Padel.Application.Common.Messaging;
 using Padel.Application.Common.Querying;
+using Padel.Domain.Common;
 using Padel.Domain.Members;
 
 namespace Padel.Application.Features.Members;
@@ -15,7 +16,7 @@ public sealed record ListMembersQuery : ListQuery, IRequest<PagedResult<MemberDt
 public sealed class ListMembersQueryHandler(IMemberRepository members)
     : IRequestHandler<ListMembersQuery, PagedResult<MemberDto>>
 {
-    public async Task<PagedResult<MemberDto>> Handle(ListMembersQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<MemberDto>>> Handle(ListMembersQuery request, CancellationToken cancellationToken)
     {
         var status = request.Status;
         var search = request.Search?.Trim().ToLowerInvariant();
