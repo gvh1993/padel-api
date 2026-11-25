@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>7d1f2b8e-4c3a-4f5e-9b6d-2a8c1e0f3b47</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Padel.Application\Padel.Application.csproj" />
+    <ProjectReference Include="..\Padel.Domain\Padel.Domain.csproj" />
+    <ProjectReference Include="..\Padel.Infrastructure\Padel.Infrastructure.csproj" />
+    <ProjectReference Include="..\Padel.ServiceDefaults\Padel.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+</Project>

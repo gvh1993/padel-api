@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Refit" />
+    <PackageReference Include="Testcontainers.Keycloak" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="TUnit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Padel.Api\Padel.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The same realm the Aspire AppHost imports, so the tests verify its roles, audience and member_id mapping. -->
+    <None Include="..\..\src\Padel.AppHost\Realms\padel-realm.json" Link="Keycloak\padel-realm.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

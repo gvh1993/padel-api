@@ -1,0 +1,29 @@
+# Build output
+bin/
+obj/
+artifacts/
+
+# Test output
+TestResults/
+*.trx
+coverage*.xml
+*.coverage
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Local data and logs
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Secrets
+appsettings.*.local.json
+.env

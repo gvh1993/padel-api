@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Padel.Api/Padel.Api.csproj" />
+    <Project Path="src/Padel.AppHost/Padel.AppHost.csproj" />
+    <Project Path="src/Padel.Application/Padel.Application.csproj" />
+    <Project Path="src/Padel.Domain/Padel.Domain.csproj" />
+    <Project Path="src/Padel.Infrastructure/Padel.Infrastructure.csproj" />
+    <Project Path="src/Padel.ServiceDefaults/Padel.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Padel.ArchitectureTests/Padel.ArchitectureTests.csproj" />
+    <Project Path="tests/Padel.IntegrationTests/Padel.IntegrationTests.csproj" />
+    <Project Path="tests/Padel.UnitTests/Padel.UnitTests.csproj" />
+  </Folder>
+</Solution>
