@@ -30,12 +30,9 @@ In Scalar, choose **Authorize** and sign in with a realm user:
 | User | Password | Access |
 | --- | --- | --- |
 | `admin` | `admin` | Realm role `admin`: manages members, courts and all bookings |
-| `member` | `member` | Not linked to a member yet |
+| `member` | `member` | Linked to the member with email `member@padel.example`, once an admin registers one |
 
-To link a Keycloak user to a member:
-
-1. Register the member as admin.
-2. In the Keycloak admin console, set the user's `member_id` attribute to that member's id. The attribute is in the realm's user profile, and only admins can edit it.
+Accounts are linked to members automatically. When an account signs in for the first time with the verified email address of a member that is not linked yet, the API links the two; from then on the account (Keycloak `sub`) identifies the member. For example, register a member with the email `member@padel.example`, then sign in as `member`.
 
 The realm is defined in [src/Padel.AppHost/Realms/padel-realm.json](src/Padel.AppHost/Realms/padel-realm.json). Keycloak imports it on first start; after that, the data volume keeps the realm and its users. After you change the file, remove the `keycloak-data` volume to import it again. The integration tests use the same file.
 
@@ -146,7 +143,7 @@ Violations of these constraints return **409 Conflict**.
 
 - **Authorization:**
   - Admins (realm role `admin`) manage members and courts.
-  - Members (`member_id` claim) can only see and change their own profile and bookings.
+  - Members (accounts linked to a member) can only see and change their own profile and bookings.
   - Every authenticated user can view courts and court schedules.
 
 ## Health checks
@@ -171,7 +168,7 @@ dotnet test
 | --- | --- |
 | `Padel.UnitTests` | Domain and Application, using in-memory fakes. |
 | `Padel.ArchitectureTests` | Layer dependencies, vertical slices and naming conventions. |
-| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL and Keycloak containers (Testcontainers). Each test member gets its own Keycloak user with a `member_id` attribute. |
+| `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
 
 Test names follow `Action_Should_Outcome` and `Given_Context_Action_Should_Outcome`.
 

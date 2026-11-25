@@ -1,5 +1,6 @@
 using Padel.Domain.Bookings;
 using Padel.Domain.Common;
+using Padel.Domain.Members;
 
 namespace Padel.Infrastructure.Persistence;
 
@@ -9,6 +10,7 @@ namespace Padel.Infrastructure.Persistence;
 internal static class DatabaseConstraints
 {
     public const string MemberEmailUnique = "IX_Members_Email";
+    public const string MemberIdentityUnique = "IX_Members_IdentityId";
     public const string BookingNoOverlap = "EX_Bookings_NoOverlappingSlots";
     public const string BookingNoMemberOverlap = "EX_Bookings_NoOverlappingMemberSlots";
     public const string BookingIdempotencyKeyUnique = "IX_Bookings_MemberId_IdempotencyKey";
@@ -16,6 +18,7 @@ internal static class DatabaseConstraints
     public static Error ErrorFor(string? constraintName) => constraintName switch
     {
         MemberEmailUnique => Error.Conflict("Member.EmailInUse", "A member with this email already exists."),
+        MemberIdentityUnique => MemberErrors.AlreadyLinked,
         BookingNoOverlap => BookingErrors.SlotTaken,
         BookingNoMemberOverlap => BookingErrors.MemberAlreadyBooked,
         BookingIdempotencyKeyUnique => BookingErrors.IdempotencyKeyReused,

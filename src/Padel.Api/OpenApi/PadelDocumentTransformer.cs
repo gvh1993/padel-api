@@ -28,8 +28,8 @@ internal sealed class PadelDocumentTransformer(IOptions<KeycloakOptions> keycloa
         {
             Type = SecuritySchemeType.OAuth2,
             Description =
-                "Sign in with Keycloak. Admins have the realm role `admin`; " +
-                "members have a `member_id` attribute that links them to their member.",
+                "Sign in with Keycloak. Admins have the realm role `admin`. An account is linked to a member " +
+                "the first time it signs in with the member's (verified) email address.",
             Flows = new OpenApiOAuthFlows
             {
                 AuthorizationCode = new OpenApiOAuthFlow

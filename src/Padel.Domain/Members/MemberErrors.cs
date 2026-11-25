@@ -8,6 +8,10 @@ public static class MemberErrors
         "Member.InvalidPhone",
         $"Phone number may only contain digits, spaces, '+', '-', '(' and ')' and must contain between {Member.PhoneMinDigits} and {Member.PhoneMaxDigits} digits.");
 
+    public static readonly Error AlreadyLinked = Error.Conflict(
+        "Member.AlreadyLinked",
+        "The member is already linked to another account.");
+
     public static Error EmailInUse(Email email) =>
         Error.Conflict("Member.EmailInUse", $"A member with email '{email}' already exists.");
 }

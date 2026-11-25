@@ -14,4 +14,7 @@ public sealed class MemberRepository(PadelDbContext context)
         var value = email.Value;
         return Set.FirstOrDefaultAsync(member => member.Email.Value == value, cancellationToken);
     }
+
+    public Task<Member?> GetByIdentityIdAsync(string identityId, CancellationToken cancellationToken = default) =>
+        Set.FirstOrDefaultAsync(member => member.IdentityId == identityId, cancellationToken);
 }

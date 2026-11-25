@@ -29,6 +29,9 @@ public class Member : EntityWithDomainEvents
     public string? SuspensionReason { get; private set; }
     public DateTimeOffset RegisteredOn { get; private set; }
 
+    /// <summary>The member's account at the identity provider (the token's <c>sub</c>), once linked.</summary>
+    public string? IdentityId { get; private set; }
+
     public bool CanBook => Status == MemberStatus.Active;
 
     public static Result<Member> Register(FullName name, Email email, string? phone, DateTimeOffset registeredOn)
@@ -71,6 +74,27 @@ public class Member : EntityWithDomainEvents
         Status = MemberStatus.Suspended;
         SuspensionReason = validReason.Text;
         AddDomainEvent(new MemberSuspended(Id, SuspensionReason));
+        return Success.Instance;
+    }
+
+    /// <summary>
+    /// Links the member to an account at the identity provider. Linking the same account again has no
+    /// effect; a member that is linked to another account cannot be taken over.
+    /// </summary>
+    public Result LinkIdentity(string identityId)
+    {
+        if (IdentityId == identityId)
+        {
+            return Success.Instance;
+        }
+
+        if (IdentityId is not null)
+        {
+            return MemberErrors.AlreadyLinked;
+        }
+
+        IdentityId = identityId;
+        AddDomainEvent(new MemberIdentityLinked(Id, identityId));
         return Success.Instance;
     }
 

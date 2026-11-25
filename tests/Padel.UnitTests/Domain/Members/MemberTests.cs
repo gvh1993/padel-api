@@ -50,6 +50,18 @@ public class MemberTests
     }
 
     [Test]
+    public void LinkIdentity_Should_LinkOnceAndAllowTheSameAccountAgain()
+    {
+        var member = CreateMember();
+
+        member.LinkIdentity("account-1").ShouldSucceed();
+        member.LinkIdentity("account-1").ShouldSucceed();
+
+        member.IdentityId.Should().Be("account-1");
+        member.LinkIdentity("account-2").ShouldFail().Is<ConflictError>().Code.Should().Be("Member.AlreadyLinked");
+    }
+
+    [Test]
     [Arguments("010-123 4567 ext")]
     [Arguments("010+1234567")]
     [Arguments("06.12345678")]

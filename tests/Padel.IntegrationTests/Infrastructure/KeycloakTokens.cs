@@ -9,7 +9,8 @@ namespace Padel.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Gets real access tokens from the Keycloak test container, using the realm the AppHost imports
-/// (src/Padel.AppHost/Realms). Members get their own Keycloak user with a <c>member_id</c> attribute.
+/// (src/Padel.AppHost/Realms). A member's account has the member's email address; the API links them
+/// on the first sign-in when Keycloak marks the address as verified.
 /// </summary>
 public sealed class KeycloakTokens(HttpClient keycloak, string adminUsername, string adminPassword)
 {
@@ -30,20 +31,20 @@ public sealed class KeycloakTokens(HttpClient keycloak, string adminUsername, st
     public Task<string> WithoutMemberLinkAsync() =>
         Cached(UnlinkedMember, () => PasswordGrantAsync(UnlinkedMember, UnlinkedMember));
 
-    public Task<string> ForMemberAsync(Guid memberId) => Cached(memberId.ToString(), async () =>
+    /// <summary>An account with the member's email address, verified unless said otherwise.</summary>
+    public Task<string> ForEmailAsync(string email, bool emailVerified = true) => Cached($"{email}:{emailVerified}", async () =>
     {
-        var username = $"member-{memberId:N}";
+        var username = $"user-{Guid.NewGuid():N}";
         var password = Guid.NewGuid().ToString("N");
 
         await CreateUserAsync(new
         {
             username,
             enabled = true,
-            email = $"{username}@padel.example",
-            emailVerified = true,
+            email,
+            emailVerified,
             firstName = "Test",
             lastName = "Member",
-            attributes = new Dictionary<string, string[]> { [PadelAuthorization.MemberIdClaim] = [memberId.ToString()] },
             credentials = new[] { new { type = "password", value = password, temporary = false } },
         });
 

@@ -17,7 +17,7 @@ partial class PadelDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125203200_BookingRules";
+    public override string LastMigrationId => "20261125203857_MemberIdentity";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -123,6 +123,10 @@ partial class PadelDbContextModelSnapshot : ModelSnapshot
                 b.Property<Guid>("Id")
                     .HasColumnType("uuid");
 
+                b.Property<string>("IdentityId")
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
+
                 b.Property<string>("Phone")
                     .HasMaxLength(15)
                     .HasColumnType("character varying(15)");
@@ -174,6 +178,11 @@ partial class PadelDbContextModelSnapshot : ModelSnapshot
                     });
 
                 b.HasKey("Id");
+
+                b.HasIndex("IdentityId")
+                    .IsUnique()
+                    .HasDatabaseName("IX_Members_IdentityId")
+                    .HasFilter("\"IdentityId\" IS NOT NULL");
 
                 b.ToTable("Members");
             });

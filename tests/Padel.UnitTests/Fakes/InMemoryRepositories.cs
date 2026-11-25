@@ -12,6 +12,9 @@ public sealed class InMemoryMemberRepository : InMemoryRepository<Member>, IMemb
 {
     public Task<Member?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default) =>
         Task.FromResult(Store.FirstOrDefault(member => member.Email == email));
+
+    public Task<Member?> GetByIdentityIdAsync(string identityId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Store.FirstOrDefault(member => member.IdentityId == identityId));
 }
 
 public sealed class InMemoryCourtRepository : InMemoryRepository<Court>, ICourtRepository;

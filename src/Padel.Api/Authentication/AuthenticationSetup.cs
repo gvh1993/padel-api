@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -39,6 +40,9 @@ internal static class AuthenticationSetup
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             .AddPolicy(PadelAuthorization.AdminPolicy, policy => policy.RequireRole(PadelAuthorization.AdminRole));
+
+        services.AddMemoryCache();
+        services.AddScoped<IClaimsTransformation, MemberClaimsTransformation>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();

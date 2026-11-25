@@ -14,8 +14,8 @@ public abstract class IntegrationTestBase(PadelApiFactory factory)
 
     protected PadelApi Anonymous { get; } = factory.CreateApi();
 
-    /// <summary>A Keycloak user linked to <paramref name="member"/> through the <c>member_id</c> attribute.</summary>
-    protected PadelApi As(RegisterMemberResponse member) => factory.CreateApi(() => factory.Tokens.ForMemberAsync(member.Id));
+    /// <summary>A Keycloak account with the member's (verified) email address, which the API links to the member.</summary>
+    protected PadelApi As(RegisterMemberResponse member) => factory.CreateApi(() => factory.Tokens.ForEmailAsync(member.Email));
 
     /// <summary>A Keycloak user that is not linked to a member.</summary>
     protected PadelApi Unlinked { get; } = factory.CreateApi(() => factory.Tokens.WithoutMemberLinkAsync());
