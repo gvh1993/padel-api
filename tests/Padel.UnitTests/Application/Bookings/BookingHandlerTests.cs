@@ -26,7 +26,7 @@ public class BookingHandlerTests
     };
 
     [Test]
-    public async Task CreateBooking_Should_PersistConfirmedBookingAndRaiseBookingCreated()
+    public async Task CreateBooking_ShouldPersistConfirmedBookingAndRaiseBookingCreated()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -41,7 +41,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_OverlappingBooking_CreateBooking_Should_FailWithConflict()
+    public async Task CreateBooking_GivenOverlappingBooking_ShouldFailWithConflict()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -55,7 +55,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_CancelledOverlappingBooking_CreateBooking_Should_Succeed()
+    public async Task CreateBooking_GivenCancelledOverlappingBooking_ShouldSucceed()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -67,7 +67,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_AdjacentBooking_CreateBooking_Should_Succeed()
+    public async Task CreateBooking_GivenAdjacentBooking_ShouldSucceed()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -79,7 +79,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownMember_CreateBooking_Should_FailWithNotFound()
+    public async Task CreateBooking_WhenUnknownMember_ShouldFailWithNotFound()
     {
         var court = _fixture.Add(CourtBuilder.New());
 
@@ -87,7 +87,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownCourt_CreateBooking_Should_FailWithNotFound()
+    public async Task CreateBooking_WhenUnknownCourt_ShouldFailWithNotFound()
     {
         var member = _fixture.Add(MemberBuilder.New());
 
@@ -95,7 +95,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_SuspendedMember_CreateBooking_Should_Fail()
+    public async Task CreateBooking_GivenSuspendedMember_ShouldFail()
     {
         var member = _fixture.Add(MemberBuilder.New().Suspended());
         var court = _fixture.Add(CourtBuilder.New());
@@ -105,7 +105,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_SlotInThePast_CreateBooking_Should_Fail()
+    public async Task CreateBooking_WhenSlotInThePast_ShouldFail()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -114,7 +114,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_MemberBookingForThemselves_CreateBooking_Should_Succeed()
+    public async Task CreateBooking_GivenMemberBookingForThemselves_ShouldSucceed()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -126,7 +126,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_MemberBookingForSomeoneElse_CreateBooking_Should_FailWithForbidden()
+    public async Task CreateBooking_GivenMemberBookingForSomeoneElse_ShouldFailWithForbidden()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -136,7 +136,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_OwnBooking_CancelBooking_Should_CancelWithReason()
+    public async Task CancelBooking_GivenOwnBooking_ShouldCancelWithReason()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var booking = _fixture.Add(BookingBuilder.New().For(member).StartingAt(Tomorrow10));
@@ -152,7 +152,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_BookingOfAnotherMember_CancelBooking_Should_FailWithForbidden()
+    public async Task CancelBooking_GivenBookingOfAnotherMember_ShouldFailWithForbidden()
     {
         var booking = _fixture.Add(BookingBuilder.New().StartingAt(Tomorrow10));
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
@@ -163,7 +163,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownBooking_CancelBooking_Should_FailWithNotFound()
+    public async Task CancelBooking_WhenUnknownBooking_ShouldFailWithNotFound()
     {
         var handler = new CancelBookingCommandHandler(_fixture.Bookings, _fixture.UnitOfWork, _fixture.CurrentUser, _fixture.Clock, _fixture.PolicyOptions);
 
@@ -171,7 +171,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_MemberWithinTheCancellationNotice_CancelBooking_Should_Fail()
+    public async Task CancelBooking_GivenMemberWithinTheCancellationNotice_ShouldFail()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var booking = _fixture.Add(BookingBuilder.New().For(member).StartingAt(Tomorrow10));
@@ -186,7 +186,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_AdminWithinTheCancellationNotice_CancelBooking_Should_Cancel()
+    public async Task CancelBooking_GivenAdminWithinTheCancellationNotice_ShouldCancel()
     {
         var booking = _fixture.Add(BookingBuilder.New().StartingAt(Tomorrow10));
         _fixture.Clock.SetUtcNow(Tomorrow10.AddHours(-1));
@@ -198,7 +198,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_MemberBookedElsewhereAtTheSameTime_CreateBooking_Should_FailWithConflict()
+    public async Task CreateBooking_GivenMemberBookedElsewhereAtTheSameTime_ShouldFailWithConflict()
     {
         var member = _fixture.Add(MemberBuilder.New());
         _fixture.Add(BookingBuilder.New().For(member).On(_fixture.Add(CourtBuilder.New().WithName("Court A"))).StartingAt(Tomorrow10));
@@ -211,7 +211,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_MemberAtTheLimitOfUpcomingBookings_CreateBooking_Should_Fail()
+    public async Task CreateBooking_GivenMemberAtTheLimitOfUpcomingBookings_ShouldFail()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -227,7 +227,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_RetryWithTheSameIdempotencyKey_CreateBooking_Should_ReturnTheSameBooking()
+    public async Task CreateBooking_WhenRetryWithTheSameIdempotencyKey_ShouldReturnTheSameBooking()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -242,7 +242,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_IdempotencyKeyReusedForAnotherSlot_CreateBooking_Should_FailWithConflict()
+    public async Task CreateBooking_WhenIdempotencyKeyReusedForAnotherSlot_ShouldFailWithConflict()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New());
@@ -255,7 +255,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_SlotHasStarted_CompleteBooking_Should_CompleteBooking()
+    public async Task CompleteBooking_GivenSlotHasStarted_ShouldCompleteBooking()
     {
         var booking = _fixture.Add(BookingBuilder.New().StartingAt(Tomorrow10));
         _fixture.Clock.SetUtcNow(Tomorrow10.AddMinutes(5));
@@ -267,7 +267,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_SlotHasNotStarted_CompleteBooking_Should_Fail()
+    public async Task CompleteBooking_GivenSlotHasNotStarted_ShouldFail()
     {
         var booking = _fixture.Add(BookingBuilder.New().StartingAt(Tomorrow10));
         var handler = new CompleteBookingCommandHandler(_fixture.Bookings, _fixture.UnitOfWork, _fixture.Clock);
@@ -276,7 +276,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_SlotHasStarted_MarkBookingNoShow_Should_MarkAsNoShow()
+    public async Task MarkBookingNoShow_GivenSlotHasStarted_ShouldMarkAsNoShow()
     {
         var booking = _fixture.Add(BookingBuilder.New().StartingAt(Tomorrow10));
         _fixture.Clock.SetUtcNow(Tomorrow10.AddHours(2));
@@ -288,7 +288,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_BookingOfAnotherMember_GetBooking_Should_FailWithForbidden()
+    public async Task GetBooking_GivenBookingOfAnotherMember_ShouldFailWithForbidden()
     {
         var booking = _fixture.Add(BookingBuilder.New().StartingAt(Tomorrow10));
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
@@ -298,7 +298,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_Member_ListBookings_Should_OnlyReturnOwnBookings()
+    public async Task ListBookings_GivenMember_ShouldOnlyReturnOwnBookings()
     {
         var court = _fixture.Add(CourtBuilder.New());
         var me = _fixture.Add(MemberBuilder.New().WithEmail("me@example.com"));
@@ -315,7 +315,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_MemberFilteringOnAnotherMember_ListBookings_Should_FailWithForbidden()
+    public async Task ListBookings_WhenMemberFilteringOnAnotherMember_ShouldFailWithForbidden()
     {
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
         var handler = new ListBookingsQueryHandler(_fixture.Bookings, _fixture.CurrentUser);
@@ -324,7 +324,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_UserWithoutMemberLink_ListBookings_Should_FailWithForbidden()
+    public async Task ListBookings_GivenUserWithoutMemberLink_ShouldFailWithForbidden()
     {
         _fixture.CurrentUser = new FakeCurrentUser();
         var handler = new ListBookingsQueryHandler(_fixture.Bookings, _fixture.CurrentUser);
@@ -333,7 +333,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_AdminWithCourtStatusAndPeriodFilters_ListBookings_Should_ReturnMatchesNewestFirst()
+    public async Task ListBookings_GivenAdminWithCourtStatusAndPeriodFilters_ShouldReturnMatchesNewestFirst()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New().WithName("Court A"));
@@ -358,7 +358,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task ListCourtBookings_Should_ReturnBookingsOfThatCourtSortedByStart()
+    public async Task ListCourtBookings_ShouldReturnBookingsOfThatCourtSortedByStart()
     {
         var member = _fixture.Add(MemberBuilder.New());
         var court = _fixture.Add(CourtBuilder.New().WithName("Court A"));
@@ -373,7 +373,7 @@ public class BookingHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownCourt_ListCourtBookings_Should_FailWithNotFound()
+    public async Task ListCourtBookings_WhenUnknownCourt_ShouldFailWithNotFound()
     {
         var handler = new ListCourtBookingsQueryHandler(_fixture.Bookings, _fixture.Courts);
 

@@ -28,7 +28,7 @@ public class BookingRulesTests
     [Arguments(7, 0)]
     [Arguments(12, 30)]
     [Arguments(22, 0)]
-    public void Given_SlotWithinOpeningHours_Create_Should_Succeed(int hour, int minute)
+    public void Create_WhenSlotWithinOpeningHours_ShouldSucceed(int hour, int minute)
     {
         Book(WinterSlot(hour, minute)).ShouldSucceed();
     }
@@ -37,13 +37,13 @@ public class BookingRulesTests
     [Arguments(6, 30)]
     [Arguments(22, 30)]
     [Arguments(23, 30)]
-    public void Given_SlotOutsideOpeningHours_Create_Should_Fail(int hour, int minute)
+    public void Create_WhenSlotOutsideOpeningHours_ShouldFail(int hour, int minute)
     {
         Book(WinterSlot(hour, minute)).ShouldFail("between 07:00 and 23:00").Is<BusinessRuleError>();
     }
 
     [Test]
-    public void Given_SummerTime_Create_Should_UseTheClubsLocalOpeningHours()
+    public void Create_WhenSummerTime_ShouldUseTheClubsLocalOpeningHours()
     {
         // 05:00 UTC is 07:00 in Amsterdam in summer (UTC+2), but 06:00 in winter.
         var summerOpening = new DateTimeOffset(2027, 6, 15, 5, 0, 0, TimeSpan.Zero);
@@ -57,26 +57,26 @@ public class BookingRulesTests
     [Test]
     [Arguments(10, 15, 60)]
     [Arguments(10, 0, 45)]
-    public void Given_SlotNotOnTheHalfHour_Create_Should_Fail(int hour, int minute, int minutes)
+    public void Create_WhenSlotNotOnTheHalfHour_ShouldFail(int hour, int minute, int minutes)
     {
         Book(WinterSlot(hour, minute, minutes)).ShouldFail("multiple of 30 minutes").Is<BusinessRuleError>();
     }
 
     [Test]
-    public void Given_MemberAtTheLimitOfUpcomingBookings_Create_Should_Fail()
+    public void Create_GivenMemberAtTheLimitOfUpcomingBookings_ShouldFail()
     {
         Book(WinterSlot(10, 0), upcomingBookings: Policy.MaxUpcomingBookingsPerMember)
             .ShouldFail("at most 3 upcoming bookings").Is<BusinessRuleError>();
     }
 
     [Test]
-    public void Given_MemberBelowTheLimit_Create_Should_Succeed()
+    public void Create_GivenMemberBelowTheLimit_ShouldSucceed()
     {
         Book(WinterSlot(10, 0), upcomingBookings: Policy.MaxUpcomingBookingsPerMember - 1).ShouldSucceed();
     }
 
     [Test]
-    public void Create_Should_StoreTheIdempotencyKey()
+    public void Create_ShouldStoreTheIdempotencyKey()
     {
         var slot = WinterSlot(10, 0);
         var court = CourtBuilder.New().Generate();
@@ -89,7 +89,7 @@ public class BookingRulesTests
     }
 
     [Test]
-    public void Given_EnoughNotice_Cancel_Should_Succeed()
+    public void Cancel_WhenEnoughNotice_ShouldSucceed()
     {
         var booking = Book(WinterSlot(10, 0)).ShouldSucceed();
 
@@ -97,7 +97,7 @@ public class BookingRulesTests
     }
 
     [Test]
-    public void Given_LessThanTheNotice_Cancel_Should_Fail()
+    public void Cancel_WhenLessThanTheNotice_ShouldFail()
     {
         var booking = Book(WinterSlot(10, 0)).ShouldSucceed();
 
@@ -107,7 +107,7 @@ public class BookingRulesTests
     }
 
     [Test]
-    public void Given_NoNoticeRequired_Cancel_Should_SucceedUntilTheStart()
+    public void Cancel_WhenNoNoticeRequired_ShouldSucceedUntilTheStart()
     {
         var booking = Book(WinterSlot(10, 0)).ShouldSucceed();
 
@@ -115,7 +115,7 @@ public class BookingRulesTests
     }
 
     [Test]
-    public void Given_StartedBooking_Cancel_Should_Fail()
+    public void Cancel_GivenStartedBooking_ShouldFail()
     {
         var booking = Book(WinterSlot(10, 0)).ShouldSucceed();
 
@@ -123,7 +123,7 @@ public class BookingRulesTests
     }
 
     [Test]
-    public void Given_UnknownTimeZoneOrClosedDay_Policy_Should_BeInvalid()
+    public void Policy_WhenUnknownTimeZoneOrClosedDay_ShouldBeInvalid()
     {
         new BookingPolicy().IsValid().Should().BeTrue();
         new BookingPolicy { TimeZone = "Mars/Olympus" }.IsValid().Should().BeFalse();

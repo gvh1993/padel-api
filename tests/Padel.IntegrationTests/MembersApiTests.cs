@@ -12,7 +12,7 @@ namespace Padel.IntegrationTests;
 public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(factory)
 {
     [Test]
-    public async Task RegisterMember_Should_Return201WithLocationAndNormalizedMember()
+    public async Task RegisterMember_ShouldReturn201WithLocationAndNormalizedMember()
     {
         var email = UniqueEmail("Gert-Jan");
 
@@ -32,7 +32,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_ExistingEmail_RegisterMember_Should_Return409Problem()
+    public async Task RegisterMember_GivenExistingEmail_ShouldReturn409Problem()
     {
         var existing = await RegisterMemberAsync();
 
@@ -45,7 +45,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_ConcurrentRegistrationsWithSameEmail_Should_CreateExactlyOneMember()
+    public async Task RegisterMember_WhenConcurrentRegistrationsWithSameEmail_ShouldCreateExactlyOneMember()
     {
         var email = UniqueEmail("race");
 
@@ -58,7 +58,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_InvalidFields_RegisterMember_Should_Return400WithErrorsPerField()
+    public async Task RegisterMember_WhenInvalidFields_ShouldReturn400WithErrorsPerField()
     {
         var response = await Admin.Members.Register(RegisterMemberRequestBuilder.New()
             .WithName("", "Jansen")
@@ -72,7 +72,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_MemberToken_GetOwnProfile_Should_Return200()
+    public async Task GetMember_GivenTokenOfTheMember_ShouldReturn200()
     {
         var member = await RegisterMemberAsync();
 
@@ -83,7 +83,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_MemberToken_GetOtherMember_Should_Return403()
+    public async Task GetMember_GivenTokenOfAnotherMember_ShouldReturn403()
     {
         var member = await RegisterMemberAsync();
         var other = await RegisterMemberAsync();
@@ -94,7 +94,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_UnknownId_GetMember_Should_Return404Problem()
+    public async Task GetMember_WhenUnknownId_ShouldReturn404Problem()
     {
         var response = await Admin.Members.Get(Guid.NewGuid());
 
@@ -104,7 +104,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_MemberToken_UpdateOwnProfile_Should_PersistChanges()
+    public async Task UpdateMemberProfile_GivenTokenOfTheMember_ShouldPersistChanges()
     {
         var member = await RegisterMemberAsync();
         var newEmail = UniqueEmail("renamed");
@@ -125,7 +125,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task SuspendAndReactivate_Should_PersistStatusAndReason()
+    public async Task SuspendAndReactivate_ShouldPersistStatusAndReason()
     {
         var member = await RegisterMemberAsync();
 
@@ -140,7 +140,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_SearchSortAndPaging_ListMembers_Should_ReturnFilteredSortedPage()
+    public async Task ListMembers_WhenSearchSortAndPaging_ShouldReturnFilteredSortedPage()
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Anna", $"Visser{tag}"));
@@ -162,7 +162,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_StatusFilter_ListMembers_Should_ReturnOnlyThatStatus()
+    public async Task ListMembers_WhenStatusFilter_ShouldReturnOnlyThatStatus()
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         var suspended = await RegisterMemberAsync(RegisterMemberRequestBuilder.New().WithName("Suspended", tag));
@@ -176,7 +176,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     }
 
     [Test]
-    public async Task Given_UnknownSortFieldAndInvalidPageSize_ListMembers_Should_Return400()
+    public async Task ListMembers_WhenUnknownSortFieldAndInvalidPageSize_ShouldReturn400()
     {
         var response = await Admin.Members.List(new MemberListParameters { Sort = "password", PageSize = 500 });
 

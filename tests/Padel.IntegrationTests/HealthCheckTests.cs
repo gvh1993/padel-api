@@ -8,7 +8,7 @@ namespace Padel.IntegrationTests;
 public class HealthCheckTests(PadelApiFactory factory) : IntegrationTestBase(factory)
 {
     [Test]
-    public async Task Liveness_Should_BeHealthyWithoutToken()
+    public async Task Liveness_ShouldBeHealthyWithoutToken()
     {
         using var response = await Anonymous.Raw.Get("health/live", "text/plain");
 
@@ -17,7 +17,7 @@ public class HealthCheckTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_DatabaseAvailable_Readiness_Should_BeHealthyWithoutToken()
+    public async Task Readiness_GivenDatabaseAvailable_ShouldBeHealthyWithoutToken()
     {
         using var response = await Anonymous.Raw.Get("health/ready", "text/plain");
 
@@ -26,7 +26,7 @@ public class HealthCheckTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_NotDevelopment_DetailedHealth_Should_NotBeExposed()
+    public async Task DetailedHealth_GivenNotDevelopment_ShouldNotBeExposed()
     {
         using var response = await Anonymous.Raw.Get("health", "application/json");
 

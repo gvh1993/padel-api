@@ -15,7 +15,7 @@ public class VerticalSliceTests
     [Test]
     [Arguments("Members", new[] { "Courts", "Bookings" })]
     [Arguments("Courts", new[] { "Members", "Bookings" })]
-    public void Feature_Should_NotDependOnOtherFeatures(string feature, string[] otherFeatures) =>
+    public void Feature_ShouldNotDependOnOtherFeatures(string feature, string[] otherFeatures) =>
         Types.InAssembly(Layers.Application)
             .That().ResideInNamespace($"{Features}.{feature}")
             .ShouldNot()
@@ -23,14 +23,14 @@ public class VerticalSliceTests
             .ShouldPass();
 
     [Test]
-    public void Requests_Should_LiveInAFeature() =>
+    public void Requests_ShouldLiveInAFeature() =>
         Types.InAssembly(Layers.Application)
             .That().ImplementInterface(typeof(IRequest<>))
             .Should().ResideInNamespaceStartingWith(Features)
             .ShouldPass();
 
     [Test]
-    public void EveryRequest_Should_HaveExactlyOneHandler()
+    public void EveryRequest_ShouldHaveExactlyOneHandler()
     {
         var types = Layers.Application.GetTypes();
 
@@ -54,7 +54,7 @@ public class VerticalSliceTests
     /// <c>CancelBookingEndpoint</c>), in the same feature, and the other way round.
     /// </summary>
     [Test]
-    public void EveryRequest_Should_HaveOneEndpointInTheSameFeature()
+    public void EveryRequest_ShouldHaveOneEndpointInTheSameFeature()
     {
         var useCases = Layers.Application.GetTypes()
             .Where(type => !type.IsAbstract && type.GetInterfaces()
@@ -76,7 +76,7 @@ public class VerticalSliceTests
     /// enums and framework types, but never application DTOs, commands or queries.
     /// </summary>
     [Test]
-    public void ApiContracts_Should_NotExposeApplicationTypes()
+    public void ApiContracts_ShouldNotExposeApplicationTypes()
     {
         var contracts = Layers.Api.GetExportedTypes()
             .Where(type => type.Namespace?.StartsWith($"{Layers.ApiNamespace}.Features", StringComparison.Ordinal) == true);

@@ -19,7 +19,7 @@ public class MemberHandlerTests
     private ListMembersQueryHandler ListHandler => new(_fixture.Members);
 
     [Test]
-    public async Task RegisterMember_Should_PersistMemberAndRaiseMemberRegistered()
+    public async Task RegisterMember_ShouldPersistMemberAndRaiseMemberRegistered()
     {
         var result = await RegisterHandler.Handle(
             new RegisterMemberCommand { FirstName = "Gert-Jan", LastName = "De Vries", Email = "GJ@Example.com", Phone = "010 123 4567" },
@@ -35,7 +35,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_EmailAlreadyInUse_RegisterMember_Should_FailWithConflict()
+    public async Task RegisterMember_GivenEmailAlreadyInUse_ShouldFailWithConflict()
     {
         _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
@@ -49,7 +49,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task UpdateMemberProfile_Should_ReplaceProfileAndSave()
+    public async Task UpdateMemberProfile_ShouldReplaceProfileAndSave()
     {
         var member = _fixture.Add(MemberBuilder.New());
 
@@ -63,7 +63,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_UnchangedEmail_UpdateMemberProfile_Should_NotReportConflict()
+    public async Task UpdateMemberProfile_WhenUnchangedEmail_ShouldNotReportConflict()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("gj@example.com"));
 
@@ -75,7 +75,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_EmailOfAnotherMember_UpdateMemberProfile_Should_FailWithConflict()
+    public async Task UpdateMemberProfile_WhenEmailOfAnotherMember_ShouldFailWithConflict()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("gj@example.com"));
         _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
@@ -86,7 +86,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_CallerIsAnotherMember_UpdateMemberProfile_Should_FailWithForbidden()
+    public async Task UpdateMemberProfile_GivenCallerIsAnotherMember_ShouldFailWithForbidden()
     {
         var member = _fixture.Add(MemberBuilder.New());
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
@@ -97,7 +97,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task SuspendMember_Should_SuspendWithReasonAndRaiseMemberSuspended()
+    public async Task SuspendMember_ShouldSuspendWithReasonAndRaiseMemberSuspended()
     {
         var member = _fixture.Add(MemberBuilder.New());
 
@@ -109,7 +109,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownMember_SuspendMember_Should_FailWithNotFound()
+    public async Task SuspendMember_WhenUnknownMember_ShouldFailWithNotFound()
     {
         await SuspendHandler.Handle(new SuspendMemberCommand(Guid.NewGuid(), null), CancellationToken.None).ShouldFail().Is<NotFoundError>();
 
@@ -117,7 +117,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_SuspendedMember_ReactivateMember_Should_ReactivateAndRaiseMemberReactivated()
+    public async Task ReactivateMember_GivenSuspendedMember_ShouldReactivateAndRaiseMemberReactivated()
     {
         var member = _fixture.Add(MemberBuilder.New().Suspended());
 
@@ -128,7 +128,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_CallerIsTheMember_GetMember_Should_ReturnMember()
+    public async Task GetMember_GivenCallerIsTheMember_ShouldReturnMember()
     {
         var member = _fixture.Add(MemberBuilder.New());
         _fixture.CurrentUser = FakeCurrentUser.ForMember(member.Id);
@@ -139,7 +139,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_CallerIsAnotherMember_GetMember_Should_FailWithForbidden()
+    public async Task GetMember_GivenCallerIsAnotherMember_ShouldFailWithForbidden()
     {
         var member = _fixture.Add(MemberBuilder.New());
         _fixture.CurrentUser = FakeCurrentUser.ForMember(Guid.NewGuid());
@@ -148,13 +148,13 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownMember_GetMember_Should_FailWithNotFound()
+    public async Task GetMember_WhenUnknownMember_ShouldFailWithNotFound()
     {
         await GetHandler.Handle(new GetMemberQuery(Guid.NewGuid()), CancellationToken.None).ShouldFail().Is<NotFoundError>();
     }
 
     [Test]
-    public async Task ListMembers_Should_SortByLastNameThenFirstNameByDefault()
+    public async Task ListMembers_ShouldSortByLastNameThenFirstNameByDefault()
     {
         _fixture.Add(MemberBuilder.New().WithEmail("c@example.com").WithName("Cees", "Bakker"));
         _fixture.Add(MemberBuilder.New().WithEmail("a@example.com").WithName("Anna", "Visser"));
@@ -166,7 +166,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_DescendingSort_ListMembers_Should_ReverseOrder()
+    public async Task ListMembers_WhenDescendingSort_ShouldReverseOrder()
     {
         _fixture.Add(MemberBuilder.New().WithEmail("a@example.com").WithName("Anna", "Visser"));
         _fixture.Add(MemberBuilder.New().WithEmail("b@example.com").WithName("Bram", "Bakker"));
@@ -177,7 +177,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_StatusAndSearchFilters_ListMembers_Should_ReturnOnlyMatches()
+    public async Task ListMembers_WhenStatusAndSearchFilters_ShouldReturnOnlyMatches()
     {
         var suspended = _fixture.Add(MemberBuilder.New().WithEmail("anna@example.com").WithName("Anna", "Visser").Suspended());
         _fixture.Add(MemberBuilder.New().WithEmail("annabel@example.com").WithName("Annabel", "Bakker"));
@@ -192,7 +192,7 @@ public class MemberHandlerTests
     }
 
     [Test]
-    public async Task Given_SecondPage_ListMembers_Should_ReturnRemainingItemsAndTotals()
+    public async Task ListMembers_WhenSecondPage_ShouldReturnRemainingItemsAndTotals()
     {
         for (var i = 0; i < 5; i++)
         {

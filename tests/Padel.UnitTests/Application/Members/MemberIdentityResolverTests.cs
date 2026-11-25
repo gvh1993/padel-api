@@ -13,7 +13,7 @@ public class MemberIdentityResolverTests
     private MemberIdentityResolver Resolver => new(_fixture.Members, _fixture.UnitOfWork);
 
     [Test]
-    public async Task Given_VerifiedEmailOfAnUnlinkedMember_Resolve_Should_LinkTheAccount()
+    public async Task Resolve_WhenVerifiedEmailOfAnUnlinkedMember_ShouldLinkTheAccount()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
@@ -25,7 +25,7 @@ public class MemberIdentityResolverTests
     }
 
     [Test]
-    public async Task Given_LinkedAccount_Resolve_Should_FindTheMemberWithoutEmail()
+    public async Task Resolve_GivenLinkedAccount_ShouldFindTheMemberWithoutEmail()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com").LinkedTo("account-1"));
 
@@ -36,7 +36,7 @@ public class MemberIdentityResolverTests
     }
 
     [Test]
-    public async Task Given_NoVerifiedEmail_Resolve_Should_NotLink()
+    public async Task Resolve_WhenNoVerifiedEmail_ShouldNotLink()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 
@@ -47,7 +47,7 @@ public class MemberIdentityResolverTests
     }
 
     [Test]
-    public async Task Given_EmailOfAMemberLinkedToAnotherAccount_Resolve_Should_NotTakeItOver()
+    public async Task Resolve_GivenEmailOfAMemberLinkedToAnotherAccount_ShouldNotTakeItOver()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com").LinkedTo("account-1"));
 
@@ -58,7 +58,7 @@ public class MemberIdentityResolverTests
     }
 
     [Test]
-    public async Task Given_UnknownEmail_Resolve_Should_ReturnNull()
+    public async Task Resolve_WhenUnknownEmail_ShouldReturnNull()
     {
         _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
 

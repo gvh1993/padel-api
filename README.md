@@ -209,7 +209,7 @@ dotnet test
 | `Padel.ArchitectureTests` | Layer dependencies, vertical slices and naming conventions. |
 | `Padel.IntegrationTests` | The whole API, using `WebApplicationFactory` and Refit clients. It runs real PostgreSQL and Keycloak containers (Testcontainers). Each test member gets its own Keycloak account with the member's verified email address. |
 
-Test names follow `Action_Should_Outcome` and `Given_Context_Action_Should_Outcome`.
+Test names follow `Action_GivenState_ShouldOutcome` (existing data or the caller) or `Action_WhenInput_ShouldOutcome` (what the action receives), for example `CreateBooking_GivenSuspendedMember_ShouldReturn422` and `CreateBooking_WhenSlotInThePast_ShouldReturn422`. Tests without a scenario are named `Action_ShouldOutcome`.
 
 Assertions use AwesomeAssertions (`value.Should().Be(expected)`). Results have their own helpers: `result.ShouldSucceed()` returns the value, and `result.ShouldFail().Is<NotFoundError>()` checks the kind of error. Only `TUnit.Engine` is referenced, so TUnit's own assertions are not available and cannot creep back in.
 

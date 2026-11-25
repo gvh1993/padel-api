@@ -18,7 +18,7 @@ public class BookingNotificationTests
         new(_fixture.Bookings, _fixture.Members, _fixture.Courts, _sender, _fixture.PolicyOptions);
 
     [Test]
-    public async Task Given_BookingCreated_SendBookingConfirmation_Should_MailTheMemberInClubTime()
+    public async Task SendBookingConfirmation_WhenBookingCreated_ShouldMailTheMemberInClubTime()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
         var court = _fixture.Add(CourtBuilder.New().WithName("Centre Court"));
@@ -33,7 +33,7 @@ public class BookingNotificationTests
     }
 
     [Test]
-    public async Task Given_BookingCancelled_SendBookingCancellation_Should_MailTheMember()
+    public async Task SendBookingCancellation_WhenBookingCancelled_ShouldMailTheMember()
     {
         var member = _fixture.Add(MemberBuilder.New().WithEmail("jan@example.com"));
         var booking = _fixture.Add(BookingBuilder.New().For(member).On(_fixture.Add(CourtBuilder.New())).StartingAt(Tomorrow10));
@@ -44,7 +44,7 @@ public class BookingNotificationTests
     }
 
     [Test]
-    public async Task Given_BookingThatNoLongerExists_SendBookingConfirmation_Should_SendNothing()
+    public async Task SendBookingConfirmation_GivenBookingThatNoLongerExists_ShouldSendNothing()
     {
         await new SendBookingConfirmation(Notifications).Handle(new BookingCreated(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
 

@@ -6,7 +6,7 @@ namespace Padel.UnitTests.Domain.Common;
 public class FullNameTests
 {
     [Test]
-    public void Create_Should_TrimBothParts()
+    public void Create_ShouldTrimBothParts()
     {
         var name = FullName.Create("  Gert-Jan ", "  De Vries  ").ShouldSucceed();
 
@@ -16,7 +16,7 @@ public class FullNameTests
     }
 
     [Test]
-    public void Given_SameParts_Should_BeEqual()
+    public void Create_WhenSameParts_ShouldBeEqual()
     {
         FullName.Create("Jan", "Jansen").ShouldSucceed().Should().Be(FullName.Create(" Jan", "Jansen ").ShouldSucceed());
     }
@@ -25,13 +25,13 @@ public class FullNameTests
     [Arguments("", "Vries")]
     [Arguments("Smith", "")]
     [Arguments("  ", "  ")]
-    public void Given_BlankPart_Should_Fail(string first, string last)
+    public void Create_WhenBlankPart_ShouldFail(string first, string last)
     {
         FullName.Create(first, last).ShouldFail();
     }
 
     [Test]
-    public void Given_PartLongerThanMaxLength_Should_Fail()
+    public void Create_WhenPartLongerThanMaxLength_ShouldFail()
     {
         var tooLong = new string('a', FullName.MaxLength + 1);
 

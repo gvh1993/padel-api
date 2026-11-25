@@ -8,7 +8,7 @@ namespace Padel.IntegrationTests;
 public class RateLimitingTests(PadelApiFactory factory)
 {
     [Test]
-    public async Task Given_MoreRequestsThanTheLimit_Should_Return429ProblemWithRetryAfter()
+    public async Task ListCourts_WhenMoreRequestsThanTheLimit_ShouldReturn429ProblemWithRetryAfter()
     {
         // The same containers and database, but an API host with a limit of 2 requests per minute.
         await using var limited = factory.WithWebHostBuilder(builder => builder.UseSetting("RateLimiting:PermitsPerMinute", "2"));

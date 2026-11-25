@@ -10,7 +10,7 @@ public class PagedResultTests
     [Arguments(1, 10, 1)]
     [Arguments(10, 10, 1)]
     [Arguments(11, 10, 2)]
-    public void Create_Should_CalculateTotalPages(int totalCount, int pageSize, int expectedPages)
+    public void Create_ShouldCalculateTotalPages(int totalCount, int pageSize, int expectedPages)
     {
         var page = PagedResult<int>.Create([], 1, pageSize, totalCount);
 
@@ -18,7 +18,7 @@ public class PagedResultTests
     }
 
     [Test]
-    public void Map_Should_ConvertItemsAndKeepPagingInfo()
+    public void Map_ShouldConvertItemsAndKeepPagingInfo()
     {
         var page = PagedResult<int>.Create([1, 2], 2, 2, 5);
 

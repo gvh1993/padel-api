@@ -17,7 +17,7 @@ public class DatabaseTests(PadelApiFactory factory)
     [Arguments("IX_Members_LastName_Trigram", "lower((\"LastName\")::text) gin_trgm_ops")]
     [Arguments("IX_Members_Email_Trigram", "\"Email\" gin_trgm_ops")]
     [Arguments("IX_Courts_Name_Trigram", "lower((\"Name\")::text) gin_trgm_ops")]
-    public async Task SearchColumns_Should_HaveATrigramIndexOnTheSearchedExpression(string index, string expression)
+    public async Task SearchColumns_ShouldHaveATrigramIndexOnTheSearchedExpression(string index, string expression)
     {
         await using var connection = new NpgsqlConnection(factory.DatabaseConnectionString);
         await connection.OpenAsync();

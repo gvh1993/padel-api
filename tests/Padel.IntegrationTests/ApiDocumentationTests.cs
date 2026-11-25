@@ -9,7 +9,7 @@ namespace Padel.IntegrationTests;
 public class ApiDocumentationTests(PadelApiFactory factory) : IntegrationTestBase(factory)
 {
     [Test]
-    public async Task OpenApiDocument_Should_BeAnonymousAndDescribeKeycloakAuthAndProblems()
+    public async Task OpenApiDocument_ShouldBeAnonymousAndDescribeKeycloakAuthAndProblems()
     {
         using var response = await Anonymous.Raw.Get("openapi/v1.json");
 
@@ -32,7 +32,7 @@ public class ApiDocumentationTests(PadelApiFactory factory) : IntegrationTestBas
     }
 
     [Test]
-    public async Task OpenApiDocument_Should_DocumentPagingSortingAndFilterParameters()
+    public async Task OpenApiDocument_ShouldDocumentPagingSortingAndFilterParameters()
     {
         using var response = await Anonymous.Raw.Get("openapi/v1.json");
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -47,7 +47,7 @@ public class ApiDocumentationTests(PadelApiFactory factory) : IntegrationTestBas
     }
 
     [Test]
-    public async Task Scalar_Should_BeServedAnonymously()
+    public async Task Scalar_ShouldBeServedAnonymously()
     {
         using var response = await Anonymous.Raw.Get("scalar", "text/html");
 

@@ -16,7 +16,7 @@ public class ValidatorTests
     };
 
     [Test]
-    public async Task Given_ValidRegistration_RegisterMemberValidator_Should_Pass()
+    public async Task RegisterMemberValidator_WhenValidRegistration_ShouldPass()
     {
         var result = await new RegisterMemberCommandValidator().ValidateAsync(ValidRegistration);
 
@@ -28,7 +28,7 @@ public class ValidatorTests
     [Arguments("1234567")]
     [Arguments("0612345678x")]
     [Arguments("06+12345678")]
-    public async Task Given_InvalidPhone_RegisterMemberValidator_Should_ReportPhone(string phone)
+    public async Task RegisterMemberValidator_WhenInvalidPhone_ShouldReportPhone(string phone)
     {
         var result = await new RegisterMemberCommandValidator().ValidateAsync(ValidRegistration with { Phone = phone });
 
@@ -36,7 +36,7 @@ public class ValidatorTests
     }
 
     [Test]
-    public async Task Given_EmptyNamesAndInvalidEmail_RegisterMemberValidator_Should_ReportEveryField()
+    public async Task RegisterMemberValidator_WhenEmptyNamesAndInvalidEmail_ShouldReportEveryField()
     {
         var result = await new RegisterMemberCommandValidator().ValidateAsync(
             ValidRegistration with { FirstName = "", LastName = " ", Email = "not-an-email" });
@@ -48,7 +48,7 @@ public class ValidatorTests
     [Arguments(29)]
     [Arguments(181)]
     [Arguments(-60)]
-    public async Task Given_InvalidDuration_CreateBookingValidator_Should_ReportEnd(int minutes)
+    public async Task CreateBookingValidator_WhenInvalidDuration_ShouldReportEnd(int minutes)
     {
         var start = new DateTimeOffset(2026, 12, 1, 10, 0, 0, TimeSpan.Zero);
 
@@ -64,7 +64,7 @@ public class ValidatorTests
     }
 
     [Test]
-    public async Task Given_EmptyIds_CreateBookingValidator_Should_ReportBothIds()
+    public async Task CreateBookingValidator_WhenEmptyIds_ShouldReportBothIds()
     {
         var start = new DateTimeOffset(2026, 12, 1, 10, 0, 0, TimeSpan.Zero);
 
@@ -83,7 +83,7 @@ public class ValidatorTests
     [Arguments(0, 20)]
     [Arguments(1, 0)]
     [Arguments(1, 101)]
-    public async Task Given_InvalidPaging_ListQueryValidator_Should_Fail(int page, int pageSize)
+    public async Task ListQueryValidator_WhenInvalidPaging_ShouldFail(int page, int pageSize)
     {
         var result = await new ListCourtsQueryValidator().ValidateAsync(new ListCourtsQuery { Page = page, PageSize = pageSize });
 
@@ -91,7 +91,7 @@ public class ValidatorTests
     }
 
     [Test]
-    public async Task Given_UnknownSortField_ListQueryValidator_Should_ListAllowedFields()
+    public async Task ListQueryValidator_WhenUnknownSortField_ShouldListAllowedFields()
     {
         var result = await new ListMembersQueryValidator().ValidateAsync(new ListMembersQuery { Sort = "lastName,-password" });
 
@@ -102,7 +102,7 @@ public class ValidatorTests
     }
 
     [Test]
-    public async Task Given_ToBeforeFrom_ListBookingsValidator_Should_ReportTo()
+    public async Task ListBookingsValidator_WhenToBeforeFrom_ShouldReportTo()
     {
         var from = new DateTimeOffset(2026, 12, 1, 0, 0, 0, TimeSpan.Zero);
 

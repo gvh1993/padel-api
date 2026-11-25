@@ -45,7 +45,7 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task AddApplication_Should_RegisterAHandlerForEveryRequest()
+    public async Task AddApplication_ShouldRegisterAHandlerForEveryRequest()
     {
         await using var provider = BuildProvider();
         await using var scope = provider.CreateAsyncScope();
@@ -67,7 +67,7 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task AddApplication_Should_RegisterTelemetryBeforeValidationBehavior()
+    public async Task AddApplication_ShouldRegisterTelemetryBeforeValidationBehavior()
     {
         await using var provider = BuildProvider();
         await using var scope = provider.CreateAsyncScope();
@@ -79,7 +79,7 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task Given_InvalidCommand_Dispatcher_Should_FailWithValidationErrorsFromPipeline()
+    public async Task Dispatcher_WhenInvalidCommand_ShouldFailWithValidationErrorsFromPipeline()
     {
         await using var provider = BuildProvider();
         await using var scope = provider.CreateAsyncScope();
@@ -92,7 +92,7 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task AddDomainEventHandlersFromAssembly_Should_LetThePublisherReachTheHandler()
+    public async Task AddDomainEventHandlersFromAssembly_ShouldLetThePublisherReachTheHandler()
     {
         await using var provider = BuildProvider(services => services.AddDomainEventHandlersFromAssembly(typeof(ApplicationServiceCollectionTests).Assembly));
         await using var scope = provider.CreateAsyncScope();
@@ -105,7 +105,7 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task Given_NoHandlers_Publisher_Should_IgnoreTheEvent()
+    public async Task Publisher_GivenNoHandlers_ShouldIgnoreTheEvent()
     {
         await using var provider = BuildProvider();
         await using var scope = provider.CreateAsyncScope();
@@ -115,7 +115,7 @@ public class ApplicationServiceCollectionTests
     }
 
     [Test]
-    public async Task AddApplication_Should_RegisterSystemTimeProvider()
+    public async Task AddApplication_ShouldRegisterSystemTimeProvider()
     {
         await using var provider = BuildProvider();
 

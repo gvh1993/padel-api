@@ -11,14 +11,14 @@ public class ConventionTests
 {
     /// <summary>Expected failures are <c>Result</c>s with an <c>Error</c>, never custom exceptions.</summary>
     [Test]
-    public void Layers_Should_NotDefineExceptions() =>
+    public void Layers_ShouldNotDefineExceptions() =>
         Types.InAssemblies([Layers.Domain, Layers.Application, Layers.Infrastructure, Layers.Api])
             .ShouldNot()
             .Inherit(typeof(Exception))
             .ShouldPass();
 
     [Test]
-    public void RequestHandlers_Should_BeSealedAndNamedHandler() =>
+    public void RequestHandlers_ShouldBeSealedAndNamedHandler() =>
         Types.InAssembly(Layers.Application)
             .That().ImplementInterface(typeof(IRequestHandler<,>))
             .Should().BeSealed()
@@ -26,7 +26,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public void Validators_Should_BeSealedAndNamedValidator() =>
+    public void Validators_ShouldBeSealedAndNamedValidator() =>
         Types.InAssembly(Layers.Application)
             .That().Inherit(typeof(AbstractValidator<>))
             .And().AreNotAbstract()
@@ -35,7 +35,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public void Requests_Should_BeNamedCommandOrQuery() =>
+    public void Requests_ShouldBeNamedCommandOrQuery() =>
         Types.InAssembly(Layers.Application)
             .That().ImplementInterface(typeof(IRequest<>))
             .Should().HaveNameEndingWith("Command")
@@ -43,7 +43,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public void DomainEvents_Should_BeSealed() =>
+    public void DomainEvents_ShouldBeSealed() =>
         Types.InAssembly(Layers.Domain)
             .That().ImplementInterface(typeof(IDomainEvent))
             .And().AreNotAbstract()
@@ -51,7 +51,7 @@ public class ConventionTests
             .ShouldPass();
 
     [Test]
-    public void Entities_Should_NotHavePublicSetters()
+    public void Entities_ShouldNotHavePublicSetters()
     {
         var publicSetters = Layers.Domain.GetTypes()
             .Where(type => type.IsSubclassOf(typeof(Entity)))
@@ -63,7 +63,7 @@ public class ConventionTests
     }
 
     [Test]
-    public void Endpoints_Should_BeInternalSealedAndNamedEndpoint()
+    public void Endpoints_ShouldBeInternalSealedAndNamedEndpoint()
     {
         var violations = Layers.ApiEndpoints()
             .Where(endpoint => endpoint.IsPublic || !endpoint.IsSealed || !endpoint.Name.EndsWith("Endpoint", StringComparison.Ordinal))

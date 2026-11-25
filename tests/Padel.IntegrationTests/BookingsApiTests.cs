@@ -14,7 +14,7 @@ namespace Padel.IntegrationTests;
 public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(factory)
 {
     [Test]
-    public async Task Given_MemberToken_CreateBooking_Should_Return201AndAppearInCourtSchedule()
+    public async Task CreateBooking_GivenMemberToken_ShouldReturn201AndAppearInCourtSchedule()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -33,7 +33,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_LocalTimeOffset_CreateBooking_Should_StoreUtc()
+    public async Task CreateBooking_WhenLocalTimeOffset_ShouldStoreUtc()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -47,7 +47,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_OverlappingSlot_CreateBooking_Should_Return409()
+    public async Task CreateBooking_GivenOverlappingSlot_ShouldReturn409()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -61,7 +61,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_ConcurrentRequestsForTheSameSlot_Should_CreateExactlyOneBooking()
+    public async Task CreateBooking_WhenConcurrentRequestsForTheSameSlot_ShouldCreateExactlyOneBooking()
     {
         var court = await CreateCourtAsync();
         var members = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => RegisterMemberAsync()));
@@ -79,7 +79,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_SuspendedMember_CreateBooking_Should_Return422()
+    public async Task CreateBooking_GivenSuspendedMember_ShouldReturn422()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -92,7 +92,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_CourtInMaintenance_CreateBooking_Should_Return422()
+    public async Task CreateBooking_GivenCourtInMaintenance_ShouldReturn422()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -104,7 +104,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_SlotInThePast_CreateBooking_Should_Return422()
+    public async Task CreateBooking_WhenSlotInThePast_ShouldReturn422()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -115,7 +115,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_UnknownCourt_CreateBooking_Should_Return404()
+    public async Task CreateBooking_WhenUnknownCourt_ShouldReturn404()
     {
         var member = await RegisterMemberAsync();
 
@@ -125,7 +125,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_TooShortSlot_CreateBooking_Should_Return400()
+    public async Task CreateBooking_WhenTooShortSlot_ShouldReturn400()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -137,7 +137,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_BookingForAnotherMember_CreateBooking_Should_Return403()
+    public async Task CreateBooking_WhenBookingForAnotherMember_ShouldReturn403()
     {
         var member = await RegisterMemberAsync();
         var other = await RegisterMemberAsync();
@@ -149,7 +149,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_OwnBooking_Cancel_Should_StoreReasonAndFreeTheSlot()
+    public async Task Cancel_GivenOwnBooking_ShouldStoreReasonAndFreeTheSlot()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -165,7 +165,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_BookingOfAnotherMember_Cancel_Should_Return403()
+    public async Task Cancel_GivenBookingOfAnotherMember_ShouldReturn403()
     {
         var owner = await RegisterMemberAsync();
         var other = await RegisterMemberAsync();
@@ -177,7 +177,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_CancelledBooking_Cancel_Should_Return422()
+    public async Task Cancel_GivenCancelledBooking_ShouldReturn422()
     {
         var member = await RegisterMemberAsync();
         var booking = await BookAsync(member, await CreateCourtAsync(), FutureSlot());
@@ -189,7 +189,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_FutureBooking_Complete_Should_Return422()
+    public async Task Complete_GivenFutureBooking_ShouldReturn422()
     {
         var member = await RegisterMemberAsync();
         var booking = await BookAsync(member, await CreateCourtAsync(), FutureSlot());
@@ -200,7 +200,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_MemberToken_MarkNoShow_Should_Return403()
+    public async Task MarkNoShow_GivenMemberToken_ShouldReturn403()
     {
         var member = await RegisterMemberAsync();
         var booking = await BookAsync(member, await CreateCourtAsync(), FutureSlot());
@@ -211,7 +211,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_MemberToken_ListBookings_Should_OnlyReturnOwnBookings()
+    public async Task ListBookings_GivenMemberToken_ShouldOnlyReturnOwnBookings()
     {
         var court = await CreateCourtAsync();
         var member = await RegisterMemberAsync();
@@ -225,7 +225,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_MemberFilteringOnAnotherMember_ListBookings_Should_Return403()
+    public async Task ListBookings_WhenMemberFilteringOnAnotherMember_ShouldReturn403()
     {
         var member = await RegisterMemberAsync();
         var other = await RegisterMemberAsync();
@@ -236,7 +236,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_PeriodStatusAndSort_ListCourtBookings_Should_ReturnMatchingBookings()
+    public async Task ListCourtBookings_WhenPeriodStatusAndSort_ShouldReturnMatchingBookings()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -259,7 +259,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_UnknownCourt_ListCourtBookings_Should_Return404()
+    public async Task ListCourtBookings_WhenUnknownCourt_ShouldReturn404()
     {
         var response = await Admin.Courts.ListBookings(Guid.NewGuid());
 
@@ -267,7 +267,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_RetryWithTheSameIdempotencyKey_CreateBooking_Should_ReturnTheSameBooking()
+    public async Task CreateBooking_WhenRetryWithTheSameIdempotencyKey_ShouldReturnTheSameBooking()
     {
         var member = await RegisterMemberAsync();
         var court = await CreateCourtAsync();
@@ -283,7 +283,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_MemberBookedOnAnotherCourtAtTheSameTime_CreateBooking_Should_Return409()
+    public async Task CreateBooking_GivenMemberBookedOnAnotherCourtAtTheSameTime_ShouldReturn409()
     {
         var member = await RegisterMemberAsync();
         var start = FutureSlot();
@@ -296,7 +296,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task Given_SlotOutsideOpeningHours_CreateBooking_Should_Return422()
+    public async Task CreateBooking_WhenSlotOutsideOpeningHours_ShouldReturn422()
     {
         var member = await RegisterMemberAsync();
 
@@ -308,7 +308,7 @@ public class BookingsApiTests(PadelApiFactory factory) : IntegrationTestBase(fac
     }
 
     [Test]
-    public async Task CreateAndCancelBooking_Should_NotifyTheMemberThroughTheOutbox()
+    public async Task CreateAndCancelBooking_ShouldNotifyTheMemberThroughTheOutbox()
     {
         var member = await RegisterMemberAsync();
         var booking = await BookAsync(member, await CreateCourtAsync(), FutureSlot());

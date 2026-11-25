@@ -12,7 +12,7 @@ public class SortMapTests
         .Add("rank", item => item.Rank);
 
     [Test]
-    public void Given_NoSort_Resolve_Should_UseDefaultSort()
+    public void Resolve_WhenNoSort_ShouldUseDefaultSort()
     {
         var sorts = Map.Resolve(null);
 
@@ -21,7 +21,7 @@ public class SortMapTests
     }
 
     [Test]
-    public void Given_MinusPrefix_Resolve_Should_SortDescending()
+    public void Resolve_WhenMinusPrefix_ShouldSortDescending()
     {
         var sorts = Map.Resolve(" -RANK , name");
 
@@ -29,7 +29,7 @@ public class SortMapTests
     }
 
     [Test]
-    public void Given_DuplicateField_Resolve_Should_KeepFirstOccurrence()
+    public void Resolve_WhenDuplicateField_ShouldKeepFirstOccurrence()
     {
         var sorts = Map.Resolve("rank,-rank");
 
@@ -38,13 +38,13 @@ public class SortMapTests
     }
 
     [Test]
-    public void Given_UnknownField_FindUnknownFields_Should_ReturnIt()
+    public void FindUnknownFields_WhenUnknownField_ShouldReturnIt()
     {
         Map.FindUnknownFields("name,-secret").Should().BeEquivalentTo(new[] { "secret" });
     }
 
     [Test]
-    public void Given_UnknownField_Resolve_Should_ThrowBecauseTheValidatorMustRejectItFirst()
+    public void Resolve_WhenUnknownField_ShouldThrowBecauseTheValidatorMustRejectItFirst()
     {
         FluentActions.Invoking(() => Map.Resolve("secret")).Should().Throw<InvalidOperationException>().WithMessage("*secret*");
     }

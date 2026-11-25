@@ -8,7 +8,7 @@ public class TimeSlotTests
     private static readonly DateTimeOffset Base = new(2026, 11, 25, 9, 0, 0, TimeSpan.Zero);
 
     [Test]
-    public void Create_Should_ExposeStartEndAndDuration()
+    public void Create_ShouldExposeStartEndAndDuration()
     {
         var slot = TimeSlot.Create(Base, Base.AddHours(1)).ShouldSucceed();
 
@@ -18,7 +18,7 @@ public class TimeSlotTests
     }
 
     [Test]
-    public void Given_LocalOffset_Should_NormalizeToUtc()
+    public void Create_WhenLocalOffset_ShouldNormalizeToUtc()
     {
         var amsterdam = new DateTimeOffset(2026, 11, 25, 10, 0, 0, TimeSpan.FromHours(1));
 
@@ -33,7 +33,7 @@ public class TimeSlotTests
     [Arguments(0)]
     [Arguments(29)]
     [Arguments(181)]
-    public void Given_InvalidDurationInMinutes_Should_Fail(int minutes)
+    public void Create_WhenInvalidDurationInMinutes_ShouldFail(int minutes)
     {
         TimeSlot.Create(Base, Base.AddMinutes(minutes)).ShouldFail();
     }
@@ -41,7 +41,7 @@ public class TimeSlotTests
     [Test]
     [Arguments(30)]
     [Arguments(180)]
-    public void Given_BoundaryDurationInMinutes_Should_BeValid(int minutes)
+    public void Create_WhenBoundaryDurationInMinutes_ShouldBeValid(int minutes)
     {
         var slot = TimeSlot.Create(Base, Base.AddMinutes(minutes)).ShouldSucceed();
 
@@ -54,7 +54,7 @@ public class TimeSlotTests
     [Arguments(-30, true)]
     [Arguments(60, false)]
     [Arguments(-60, false)]
-    public void Overlaps_Should_TreatSlotsAsHalfOpenIntervals(int offsetMinutes, bool expected)
+    public void Overlaps_ShouldTreatSlotsAsHalfOpenIntervals(int offsetMinutes, bool expected)
     {
         var slot = TimeSlot.Create(Base, Base.AddHours(1)).ShouldSucceed();
         var other = TimeSlot.Create(Base.AddMinutes(offsetMinutes), Base.AddMinutes(offsetMinutes).AddHours(1)).ShouldSucceed();

@@ -14,7 +14,7 @@ public class MemberTests
         Member.Register(FullName.Create("Gert-Jan", "De Vries").ShouldSucceed(), Email.Create("gertjan@example.com").ShouldSucceed(), phone, RegisteredOn);
 
     [Test]
-    public void Register_Should_CreateActiveMemberAndRaiseMemberRegistered()
+    public void Register_ShouldCreateActiveMemberAndRaiseMemberRegistered()
     {
         var member = Register().ShouldSucceed();
 
@@ -26,7 +26,7 @@ public class MemberTests
     }
 
     [Test]
-    public void Register_Should_NormalizePhoneToDigitsOnly()
+    public void Register_ShouldNormalizePhoneToDigitsOnly()
     {
         var member = Register("+31 (0)10 123 4567").ShouldSucceed();
 
@@ -34,7 +34,7 @@ public class MemberTests
     }
 
     [Test]
-    public void Given_BlankPhone_Should_StoreNull()
+    public void Register_WhenBlankPhone_ShouldStoreNull()
     {
         var member = Register("  ").ShouldSucceed();
 
@@ -44,13 +44,13 @@ public class MemberTests
     [Test]
     [Arguments("1234567")]
     [Arguments("1234567890123456")]
-    public void Given_PhoneWithInvalidDigitCount_Should_Fail(string phone)
+    public void Register_WhenPhoneWithInvalidDigitCount_ShouldFail(string phone)
     {
         Register(phone).ShouldFail().Is<ValidationError>();
     }
 
     [Test]
-    public void LinkIdentity_Should_LinkOnceAndAllowTheSameAccountAgain()
+    public void LinkIdentity_ShouldLinkOnceAndAllowTheSameAccountAgain()
     {
         var member = MemberBuilder.New().Generate();
 
@@ -65,7 +65,7 @@ public class MemberTests
     [Arguments("010-123 4567 ext")]
     [Arguments("010+1234567")]
     [Arguments("06.12345678")]
-    public void Given_PhoneWithInvalidCharacters_Should_Fail(string phone)
+    public void Register_WhenPhoneWithInvalidCharacters_ShouldFail(string phone)
     {
         Register(phone).ShouldFail("may only contain digits").Is<ValidationError>();
     }
@@ -73,13 +73,13 @@ public class MemberTests
     [Test]
     [Arguments("+31 (0)10-123 4567")]
     [Arguments("0612345678")]
-    public void Given_PhoneInAllowedFormat_Should_Register(string phone)
+    public void Register_WhenPhoneInAllowedFormat_ShouldSucceed(string phone)
     {
         Register(phone).ShouldSucceed();
     }
 
     [Test]
-    public void Suspend_Should_BlockBookingStoreReasonAndRaiseMemberSuspended()
+    public void Suspend_ShouldBlockBookingStoreReasonAndRaiseMemberSuspended()
     {
         var member = MemberBuilder.New().Generate();
 
@@ -94,7 +94,7 @@ public class MemberTests
     }
 
     [Test]
-    public void Given_SuspendedMember_Suspend_Should_NotRaiseSecondEvent()
+    public void Suspend_GivenSuspendedMember_ShouldNotRaiseSecondEvent()
     {
         var member = MemberBuilder.New().Suspended("first").Generate();
 
@@ -105,7 +105,7 @@ public class MemberTests
     }
 
     [Test]
-    public void Given_SuspendedMember_Reactivate_Should_ClearReasonAndRaiseMemberReactivated()
+    public void Reactivate_GivenSuspendedMember_ShouldClearReasonAndRaiseMemberReactivated()
     {
         var member = MemberBuilder.New().Suspended("unpaid fees").Generate();
 
@@ -117,7 +117,7 @@ public class MemberTests
     }
 
     [Test]
-    public void Given_ActiveMember_Reactivate_Should_NotRaiseEvent()
+    public void Reactivate_GivenActiveMember_ShouldNotRaiseEvent()
     {
         var member = MemberBuilder.New().Generate();
 
@@ -127,7 +127,7 @@ public class MemberTests
     }
 
     [Test]
-    public void UpdateProfile_Should_ReplaceNameEmailAndPhone()
+    public void UpdateProfile_ShouldReplaceNameEmailAndPhone()
     {
         var member = MemberBuilder.New().Generate();
 

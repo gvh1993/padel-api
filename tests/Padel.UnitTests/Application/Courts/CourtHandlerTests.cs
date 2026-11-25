@@ -13,7 +13,7 @@ public class CourtHandlerTests
     private readonly HandlerFixture _fixture = new();
 
     [Test]
-    public async Task CreateCourt_Should_PersistAvailableCourtAndRaiseCourtCreated()
+    public async Task CreateCourt_ShouldPersistAvailableCourtAndRaiseCourtCreated()
     {
         var handler = new CreateCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
@@ -25,7 +25,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_SaveFails_RenameCourt_Should_ReturnTheSaveError()
+    public async Task RenameCourt_GivenSaveFails_ShouldReturnTheSaveError()
     {
         var court = _fixture.Add(CourtBuilder.New());
         _fixture.UnitOfWork.FailWith = ApplicationErrors.ConcurrentChange;
@@ -37,7 +37,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task RenameCourt_Should_ChangeTheName()
+    public async Task RenameCourt_ShouldChangeTheName()
     {
         var court = _fixture.Add(CourtBuilder.New());
         var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
@@ -49,7 +49,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_StaleVersion_RenameCourt_Should_FailWithPreconditionFailed()
+    public async Task RenameCourt_WhenStaleVersion_ShouldFailWithPreconditionFailed()
     {
         var court = _fixture.Add(CourtBuilder.New().WithName("Court A"));
         var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
@@ -63,7 +63,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_CurrentVersion_RenameCourt_Should_ChangeTheName()
+    public async Task RenameCourt_WhenCurrentVersion_ShouldChangeTheName()
     {
         var court = _fixture.Add(CourtBuilder.New());
         var handler = new RenameCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
@@ -74,7 +74,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task SetCourtMaintenance_Should_PutCourtInMaintenance()
+    public async Task SetCourtMaintenance_ShouldPutCourtInMaintenance()
     {
         var court = _fixture.Add(CourtBuilder.New());
         var handler = new SetCourtMaintenanceCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
@@ -85,7 +85,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_RetiredCourt_SetCourtMaintenance_Should_Fail()
+    public async Task SetCourtMaintenance_GivenRetiredCourt_ShouldFail()
     {
         var court = _fixture.Add(CourtBuilder.New().Retired());
         var handler = new SetCourtMaintenanceCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
@@ -95,7 +95,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task RetireCourt_Should_RetireAndRaiseCourtRetired()
+    public async Task RetireCourt_ShouldRetireAndRaiseCourtRetired()
     {
         var court = _fixture.Add(CourtBuilder.New());
         var handler = new RetireCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
@@ -107,7 +107,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownCourt_RetireCourt_Should_FailWithNotFound()
+    public async Task RetireCourt_WhenUnknownCourt_ShouldFailWithNotFound()
     {
         var handler = new RetireCourtCommandHandler(_fixture.Courts, _fixture.UnitOfWork);
 
@@ -116,7 +116,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_UnknownCourt_GetCourt_Should_FailWithNotFound()
+    public async Task GetCourt_WhenUnknownCourt_ShouldFailWithNotFound()
     {
         var handler = new GetCourtQueryHandler(_fixture.Courts);
 
@@ -124,7 +124,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_SurfaceAndStatusFilters_ListCourts_Should_ReturnMatchesSortedByName()
+    public async Task ListCourts_WhenSurfaceAndStatusFilters_ShouldReturnMatchesSortedByName()
     {
         _fixture.Add(CourtBuilder.New().WithName("Court C").WithSurface("glass"));
         _fixture.Add(CourtBuilder.New().WithName("Court A").WithSurface("Glass"));
@@ -140,7 +140,7 @@ public class CourtHandlerTests
     }
 
     [Test]
-    public async Task Given_SearchTerm_ListCourts_Should_MatchNamesCaseInsensitively()
+    public async Task ListCourts_WhenSearchTerm_ShouldMatchNamesCaseInsensitively()
     {
         _fixture.Add(CourtBuilder.New().WithName("Centre Court"));
         _fixture.Add(CourtBuilder.New().WithName("Court 2"));

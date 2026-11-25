@@ -19,7 +19,7 @@ public class BookingTests
         Booking.Create(member, court, Slot(start), Now, Policy, upcomingBookingsOfMember: 0);
 
     [Test]
-    public void Create_Should_CreateConfirmedBookingAndRaiseBookingCreated()
+    public void Create_ShouldCreateConfirmedBookingAndRaiseBookingCreated()
     {
         var member = MemberBuilder.New().Generate();
         var court = CourtBuilder.New().Generate();
@@ -35,7 +35,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_SuspendedMember_Create_Should_Fail()
+    public void Create_GivenSuspendedMember_ShouldFail()
     {
         var member = MemberBuilder.New().Suspended().Generate();
 
@@ -43,7 +43,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_CourtInMaintenance_Create_Should_Fail()
+    public void Create_GivenCourtInMaintenance_ShouldFail()
     {
         var court = CourtBuilder.New().InMaintenance().Generate();
 
@@ -51,7 +51,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_RetiredCourt_Create_Should_Fail()
+    public void Create_GivenRetiredCourt_ShouldFail()
     {
         var court = CourtBuilder.New().Retired().Generate();
 
@@ -61,13 +61,13 @@ public class BookingTests
     [Test]
     [Arguments(0)]
     [Arguments(-60)]
-    public void Given_SlotThatDoesNotStartInTheFuture_Create_Should_Fail(int offsetMinutes)
+    public void Create_WhenSlotDoesNotStartInTheFuture_ShouldFail(int offsetMinutes)
     {
         Book(MemberBuilder.New().Generate(), CourtBuilder.New().Generate(), Now.AddMinutes(offsetMinutes)).ShouldFail("future");
     }
 
     [Test]
-    public void Cancel_Should_StoreReasonAndRaiseBookingCancelled()
+    public void Cancel_ShouldStoreReasonAndRaiseBookingCancelled()
     {
         var booking = BookingBuilder.New().Generate();
 
@@ -80,7 +80,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_CancelledBooking_Cancel_Should_Fail()
+    public void Cancel_GivenCancelledBooking_ShouldFail()
     {
         var booking = BookingBuilder.New().Cancelled().Generate();
 
@@ -88,7 +88,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_CompletedBooking_Cancel_Should_Fail()
+    public void Cancel_GivenCompletedBooking_ShouldFail()
     {
         var booking = BookingBuilder.New().Completed().Generate();
 
@@ -96,7 +96,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_StartedBooking_Complete_Should_RaiseBookingCompleted()
+    public void Complete_GivenStartedBooking_ShouldRaiseBookingCompleted()
     {
         var booking = BookingBuilder.New().StartingAt(Tomorrow).Generate();
 
@@ -107,7 +107,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_StartedBooking_MarkAsNoShow_Should_RaiseBookingNoShow()
+    public void MarkAsNoShow_GivenStartedBooking_ShouldRaiseBookingNoShow()
     {
         var booking = BookingBuilder.New().StartingAt(Tomorrow).Generate();
 
@@ -118,7 +118,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_BookingThatHasNotStarted_Complete_Should_Fail()
+    public void Complete_GivenBookingThatHasNotStarted_ShouldFail()
     {
         var booking = BookingBuilder.New().StartingAt(Tomorrow).Generate();
 
@@ -126,7 +126,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_NoShowBooking_Complete_Should_Fail()
+    public void Complete_GivenNoShowBooking_ShouldFail()
     {
         var booking = BookingBuilder.New().NoShow().Generate();
 
@@ -134,7 +134,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Given_CancelledBooking_MarkAsNoShow_Should_Fail()
+    public void MarkAsNoShow_GivenCancelledBooking_ShouldFail()
     {
         var booking = BookingBuilder.New().Cancelled().Generate();
 
@@ -142,7 +142,7 @@ public class BookingTests
     }
 
     [Test]
-    public void Overlaps_Should_OnlyMatchActiveBookingsOnTheSameCourt()
+    public void Overlaps_ShouldOnlyMatchActiveBookingsOnTheSameCourt()
     {
         var court = CourtBuilder.New().Generate();
         var booking = BookingBuilder.New().On(court).StartingAt(Tomorrow).Generate();

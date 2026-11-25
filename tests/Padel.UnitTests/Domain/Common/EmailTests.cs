@@ -6,7 +6,7 @@ namespace Padel.UnitTests.Domain.Common;
 public class EmailTests
 {
     [Test]
-    public void Create_Should_TrimAndLowercaseTheAddress()
+    public void Create_ShouldTrimAndLowercaseTheAddress()
     {
         var email = Email.Create("  John.Doe@Example.COM ").ShouldSucceed();
 
@@ -14,7 +14,7 @@ public class EmailTests
     }
 
     [Test]
-    public void Given_SameAddressWithDifferentCasing_Should_BeEqual()
+    public void Create_WhenSameAddressWithDifferentCasing_ShouldBeEqual()
     {
         Email.Create("A@Example.com").ShouldSucceed().Should().Be(Email.Create("a@example.com").ShouldSucceed());
     }
@@ -29,13 +29,13 @@ public class EmailTests
     [Arguments("user@")]
     [Arguments("user@.com")]
     [Arguments("user@domain.")]
-    public void Given_InvalidAddress_Should_Fail(string value)
+    public void Create_WhenInvalidAddress_ShouldFail(string value)
     {
         Email.Create(value).ShouldFail();
     }
 
     [Test]
-    public void Given_AddressLongerThanMaxLength_Should_Fail()
+    public void Create_WhenAddressLongerThanMaxLength_ShouldFail()
     {
         var value = new string('a', 64) + "@" + new string('b', Email.MaxLength) + ".com";
 

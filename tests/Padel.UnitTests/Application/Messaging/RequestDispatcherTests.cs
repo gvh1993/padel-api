@@ -54,7 +54,7 @@ public class RequestDispatcherTests
     }
 
     [Test]
-    public async Task Send_Should_RunBehaviorsInRegistrationOrderAroundTheHandler()
+    public async Task Send_ShouldRunBehaviorsInRegistrationOrderAroundTheHandler()
     {
         var services = new ServiceCollection()
             .AddSingleton<CallLog>()
@@ -71,7 +71,7 @@ public class RequestDispatcherTests
     }
 
     [Test]
-    public async Task Given_BehaviorThatFails_Send_Should_ReturnItsErrorWithoutCallingTheHandler()
+    public async Task Send_GivenBehaviorThatFails_ShouldReturnItsErrorWithoutCallingTheHandler()
     {
         var services = new ServiceCollection()
             .AddSingleton<CallLog>()
@@ -87,7 +87,7 @@ public class RequestDispatcherTests
     }
 
     [Test]
-    public async Task Given_NoHandler_Send_Should_ThrowInvalidOperationException()
+    public async Task Send_GivenNoHandler_ShouldThrowInvalidOperationException()
     {
         await using var provider = new ServiceCollection()
             .AddScoped<IRequestDispatcher, RequestDispatcher>()

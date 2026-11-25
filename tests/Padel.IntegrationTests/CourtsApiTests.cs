@@ -12,7 +12,7 @@ namespace Padel.IntegrationTests;
 public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(factory)
 {
     [Test]
-    public async Task CreateCourt_Should_Return201WithAvailableCourt()
+    public async Task CreateCourt_ShouldReturn201WithAvailableCourt()
     {
         var name = UniqueName("Court");
 
@@ -26,7 +26,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task Given_BlankName_CreateCourt_Should_Return400()
+    public async Task CreateCourt_WhenBlankName_ShouldReturn400()
     {
         var response = await Admin.Courts.Create(CreateCourtRequestBuilder.New().WithName(" ").Generate());
 
@@ -35,7 +35,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task RenameMaintenanceAndRetire_Should_PersistEveryChange()
+    public async Task RenameMaintenanceAndRetire_ShouldPersistEveryChange()
     {
         var court = await CreateCourtAsync();
         var newName = UniqueName("Centre");
@@ -52,7 +52,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task Given_RetiredCourt_SetMaintenance_Should_Return422Problem()
+    public async Task SetMaintenance_GivenRetiredCourt_ShouldReturn422Problem()
     {
         var court = await CreateCourtAsync();
         await Admin.Courts.Retire(court.Id);
@@ -64,7 +64,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task Given_MemberToken_ListCourts_Should_FilterAndSort()
+    public async Task ListCourts_GivenMemberToken_ShouldFilterAndSort()
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         await CreateCourtAsync(CreateCourtRequestBuilder.New().WithName($"B {tag}").WithSurface("glass"));
@@ -84,7 +84,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task Given_MemberToken_CreateCourt_Should_Return403()
+    public async Task CreateCourt_GivenMemberToken_ShouldReturn403()
     {
         var member = await RegisterMemberAsync();
 
@@ -94,7 +94,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task GetCourt_Should_ReturnAnETagThatChangesOnUpdate()
+    public async Task GetCourt_ShouldReturnAnETagThatChangesOnUpdate()
     {
         var court = await CreateCourtAsync();
 
@@ -107,7 +107,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task Given_StaleETag_RenameCourt_Should_Return412AndKeepTheNewerChange()
+    public async Task RenameCourt_WhenStaleETag_ShouldReturn412AndKeepTheNewerChange()
     {
         var court = await CreateCourtAsync();
         var staleETag = (await Admin.Courts.Get(court.Id)).Headers!.ETag!.ToString();
@@ -123,7 +123,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     }
 
     [Test]
-    public async Task Given_NoIfMatch_RenameCourt_Should_ApplyTheChange()
+    public async Task RenameCourt_WhenNoIfMatch_ShouldApplyTheChange()
     {
         var court = await CreateCourtAsync();
 

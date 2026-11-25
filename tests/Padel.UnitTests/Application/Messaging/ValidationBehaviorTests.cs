@@ -13,7 +13,7 @@ public class ValidationBehaviorTests
     private static Task<Result<MemberDto>> Next() => Task.FromResult<Result<MemberDto>>(Dto);
 
     [Test]
-    public async Task Given_ValidRequest_Handle_Should_CallNext()
+    public async Task Handle_WhenValidRequest_ShouldCallNext()
     {
         var behavior = new ValidationBehavior<RegisterMemberCommand, MemberDto>([new RegisterMemberCommandValidator()]);
         var command = new RegisterMemberCommand { FirstName = "Jan", LastName = "Jansen", Email = "jan@example.com" };
@@ -24,7 +24,7 @@ public class ValidationBehaviorTests
     }
 
     [Test]
-    public async Task Given_InvalidRequest_Handle_Should_FailWithErrorsPerPropertyAndNotCallNext()
+    public async Task Handle_WhenInvalidRequest_ShouldFailWithErrorsPerPropertyAndNotCallNext()
     {
         var behavior = new ValidationBehavior<RegisterMemberCommand, MemberDto>([new RegisterMemberCommandValidator()]);
         var command = new RegisterMemberCommand { FirstName = "", LastName = "Jansen", Email = "nope" };
@@ -44,7 +44,7 @@ public class ValidationBehaviorTests
     }
 
     [Test]
-    public async Task Given_NoValidators_Handle_Should_CallNext()
+    public async Task Handle_GivenNoValidators_ShouldCallNext()
     {
         var behavior = new ValidationBehavior<RegisterMemberCommand, MemberDto>(Array.Empty<IValidator<RegisterMemberCommand>>());
         var command = new RegisterMemberCommand { FirstName = "", LastName = "", Email = "" };

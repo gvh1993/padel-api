@@ -9,19 +9,19 @@ public class ReasonTests
     [Arguments(null)]
     [Arguments("")]
     [Arguments("   ")]
-    public void Given_BlankReason_Create_Should_ReturnNone(string? reason)
+    public void Create_WhenBlankReason_ShouldReturnNone(string? reason)
     {
         Reason.Create(reason).ShouldSucceed().Should().Be(Reason.None);
     }
 
     [Test]
-    public void Create_Should_TrimTheReason()
+    public void Create_ShouldTrimTheReason()
     {
         Reason.Create("  rain  ").ShouldSucceed().Text.Should().Be("rain");
     }
 
     [Test]
-    public void Given_ReasonLongerThanMaxLength_Should_Fail()
+    public void Create_WhenReasonLongerThanMaxLength_ShouldFail()
     {
         Reason.Create(new string('x', Reason.MaxLength + 1)).ShouldFail();
     }

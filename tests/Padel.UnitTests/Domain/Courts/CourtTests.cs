@@ -7,7 +7,7 @@ namespace Padel.UnitTests.Domain.Courts;
 public class CourtTests
 {
     [Test]
-    public void Create_Should_CreateAvailableCourtAndRaiseCourtCreated()
+    public void Create_ShouldCreateAvailableCourtAndRaiseCourtCreated()
     {
         var court = Court.Create("Court A", "glass").ShouldSucceed();
 
@@ -20,20 +20,20 @@ public class CourtTests
     [Test]
     [Arguments("")]
     [Arguments("   ")]
-    public void Given_BlankNameOrSurface_Should_Fail(string value)
+    public void Create_WhenBlankNameOrSurface_ShouldFail(string value)
     {
         Court.Create(value, "glass").ShouldFail();
         Court.Create("Court A", value).ShouldFail();
     }
 
     [Test]
-    public void Given_NameLongerThanMaxLength_Should_Fail()
+    public void Create_WhenNameLongerThanMaxLength_ShouldFail()
     {
         Court.Create(new string('a', Court.MaxLength + 1), "glass").ShouldFail();
     }
 
     [Test]
-    public void Rename_Should_TrimAndReplaceTheName()
+    public void Rename_ShouldTrimAndReplaceTheName()
     {
         var court = CourtBuilder.New().Generate();
 
@@ -43,7 +43,7 @@ public class CourtTests
     }
 
     [Test]
-    public void SetMaintenance_Should_ToggleBetweenMaintenanceAndAvailable()
+    public void SetMaintenance_ShouldToggleBetweenMaintenanceAndAvailable()
     {
         var court = CourtBuilder.New().Generate();
 
@@ -56,7 +56,7 @@ public class CourtTests
     }
 
     [Test]
-    public void Retire_Should_RetireCourtAndRaiseCourtRetired()
+    public void Retire_ShouldRetireCourtAndRaiseCourtRetired()
     {
         var court = CourtBuilder.New().Generate();
 
@@ -67,7 +67,7 @@ public class CourtTests
     }
 
     [Test]
-    public void Given_RetiredCourt_Retire_Should_NotRaiseSecondEvent()
+    public void Retire_GivenRetiredCourt_ShouldNotRaiseSecondEvent()
     {
         var court = CourtBuilder.New().Retired().Generate();
 
@@ -77,7 +77,7 @@ public class CourtTests
     }
 
     [Test]
-    public void Given_RetiredCourt_SetMaintenance_Should_Fail()
+    public void SetMaintenance_GivenRetiredCourt_ShouldFail()
     {
         var court = CourtBuilder.New().Retired().Generate();
 
