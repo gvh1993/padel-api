@@ -1,7 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
 using Padel.Api.Features.Courts;
-using Padel.Api.Features.Members;
 using Padel.Domain.Courts;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;

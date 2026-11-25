@@ -1,7 +1,5 @@
 using System.Net;
 using AwesomeAssertions;
-using Padel.Api.Features.Bookings;
-using Padel.Api.Features.Courts;
 using Padel.Api.Features.Members;
 using Padel.IntegrationTests.Infrastructure;
 

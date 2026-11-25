@@ -1,4 +1,3 @@
-using AwesomeAssertions;
 using Padel.Application.Common;
 using Padel.Domain.Common;
 using Padel.UnitTests.Fakes;

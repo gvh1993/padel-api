@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using Padel.Application.Common;
 using Padel.Application.Features.Bookings;
 using Padel.Domain.Bookings;
 using Padel.Domain.Common;

@@ -1,0 +1,34 @@
+# Code style, enforced in the build (EnforceCodeStyleInBuild + TreatWarningsAsErrors).
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,slnx,json,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+indent_size = 4
+
+# Usings: System first, no unused ones.
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_diagnostic.IDE0005.severity = warning
+
+# File-scoped namespaces.
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_diagnostic.IDE0161.severity = warning
+
+# Explicit accessibility modifiers.
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_diagnostic.IDE0040.severity = warning
+
+# Namespaces follow the feature (Padel.Application.Features.Bookings); folders go one level deeper per use case.
+dotnet_diagnostic.IDE0130.severity = none
+
+# Generated EF Core migrations are not hand-written code.
+[**/Migrations/*.cs]
+generated_code = true

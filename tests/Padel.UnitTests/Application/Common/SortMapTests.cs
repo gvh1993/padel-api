@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using Padel.Application.Common;
 using Padel.Application.Common.Querying;
 
 namespace Padel.UnitTests.Application.Common;

@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 using Padel.Application.Common;
 
 namespace Padel.Infrastructure.Telemetry;

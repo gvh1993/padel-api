@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using Padel.Application.Common;
 using Padel.Application.Features.Members;
 using Padel.Domain.Common;
 using Padel.Domain.Members;

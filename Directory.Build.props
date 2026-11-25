@@ -9,6 +9,7 @@
     <!-- XML doc comments feed the OpenAPI document shown in Scalar. Not every member needs one. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
 </Project>

@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using Padel.Domain.Common;
 using Padel.Domain.Courts;
 
 namespace Padel.UnitTests.Domain.Courts;
