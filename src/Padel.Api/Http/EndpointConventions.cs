@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
-using Padel.Application.Common.Querying;
 
 namespace Padel.Api.Http;
 
@@ -32,11 +30,10 @@ internal static class EndpointConventions
         builder.ProducesValidationProblem();
 }
 
-/// <summary>Paging and sorting query parameters shared by every list endpoint.</summary>
-internal readonly record struct Paging(
-    [Description("1-based page number.")]
-    [FromQuery(Name = "page")] int Page = 1,
-    [Description("Items per page (1-100).")]
-    [FromQuery(Name = "pageSize")] int PageSize = ListQuery.DefaultPageSize,
-    [Description("Comma separated sort fields; prefix a field with '-' to sort descending, e.g. `lastName,-registeredOn`.")]
-    [FromQuery(Name = "sort")] string? Sort = null);
+/// <summary>Descriptions of the paging and sorting parameters that every list request has.</summary>
+internal static class QueryDescriptions
+{
+    public const string Page = "1-based page number.";
+    public const string PageSize = "Items per page (1-100).";
+    public const string Sort = "Comma separated sort fields; prefix a field with '-' to sort descending, e.g. `lastName,-registeredOn`.";
+}

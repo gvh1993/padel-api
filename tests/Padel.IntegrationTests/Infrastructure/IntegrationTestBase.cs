@@ -1,6 +1,6 @@
-using Padel.Application.Features.Bookings;
-using Padel.Application.Features.Courts;
-using Padel.Application.Features.Members;
+using Padel.Api.Features.Bookings;
+using Padel.Api.Features.Courts;
+using Padel.Api.Features.Members;
 
 namespace Padel.IntegrationTests.Infrastructure;
 
@@ -15,7 +15,7 @@ public abstract class IntegrationTestBase(PadelApiFactory factory)
     protected PadelApi Anonymous { get; } = factory.CreateApi();
 
     /// <summary>A Keycloak user linked to <paramref name="member"/> through the <c>member_id</c> attribute.</summary>
-    protected PadelApi As(MemberDto member) => factory.CreateApi(() => factory.Tokens.ForMemberAsync(member.Id));
+    protected PadelApi As(RegisterMemberResponse member) => factory.CreateApi(() => factory.Tokens.ForMemberAsync(member.Id));
 
     /// <summary>A Keycloak user that is not linked to a member.</summary>
     protected PadelApi Unlinked { get; } = factory.CreateApi(() => factory.Tokens.WithoutMemberLinkAsync());
@@ -35,9 +35,9 @@ public abstract class IntegrationTestBase(PadelApiFactory factory)
         return new DateTimeOffset(today.Year, today.Month, today.Day, hour, 0, 0, TimeSpan.Zero).AddDays(daysAhead);
     }
 
-    protected async Task<MemberDto> RegisterMemberAsync(string? firstName = null, string? lastName = null, string? email = null)
+    protected async Task<RegisterMemberResponse> RegisterMemberAsync(string? firstName = null, string? lastName = null, string? email = null)
     {
-        var response = await Admin.Members.Register(new RegisterMemberCommand
+        var response = await Admin.Members.Register(new RegisterMemberRequest
         {
             FirstName = firstName ?? "Test",
             LastName = lastName ?? "Member",
@@ -47,15 +47,15 @@ public abstract class IntegrationTestBase(PadelApiFactory factory)
         return response.Value();
     }
 
-    protected async Task<CourtDto> CreateCourtAsync(string? name = null, string surface = "glass")
+    protected async Task<CreateCourtResponse> CreateCourtAsync(string? name = null, string surface = "glass")
     {
-        var response = await Admin.Courts.Create(new CreateCourtCommand { Name = name ?? UniqueName("Court"), Surface = surface });
+        var response = await Admin.Courts.Create(new CreateCourtRequest { Name = name ?? UniqueName("Court"), Surface = surface });
         return response.Value();
     }
 
-    protected async Task<BookingDto> BookAsync(MemberDto member, CourtDto court, DateTimeOffset start, int minutes = 60)
+    protected async Task<CreateBookingResponse> BookAsync(RegisterMemberResponse member, CreateCourtResponse court, DateTimeOffset start, int minutes = 60)
     {
-        var response = await As(member).Bookings.Create(new CreateBookingCommand
+        var response = await As(member).Bookings.Create(new CreateBookingRequest
         {
             MemberId = member.Id,
             CourtId = court.Id,

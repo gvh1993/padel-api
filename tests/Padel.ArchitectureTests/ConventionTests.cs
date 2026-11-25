@@ -54,9 +54,12 @@ public class ConventionTests
     }
 
     [Test]
-    public Task ApiEndpointClasses_Should_NotBePublic() =>
-        Types.InAssembly(Layers.Api)
-            .That().HaveNameEndingWith("Endpoints")
-            .Should().NotBePublic()
-            .ShouldPass();
+    public async Task Endpoints_Should_BeInternalSealedAndNamedEndpoint()
+    {
+        var violations = Layers.ApiEndpoints()
+            .Where(endpoint => endpoint.IsPublic || !endpoint.IsSealed || !endpoint.Name.EndsWith("Endpoint", StringComparison.Ordinal))
+            .Select(endpoint => endpoint.FullName);
+
+        await Assert.That(violations).IsEmpty();
+    }
 }

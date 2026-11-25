@@ -1,6 +1,5 @@
 using System.Net;
 using Padel.Api.Features.Members;
-using Padel.Application.Features.Members;
 using Padel.Domain.Members;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
@@ -16,7 +15,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var email = UniqueEmail("Gert-Jan");
 
-        var response = await Admin.Members.Register(new RegisterMemberCommand
+        var response = await Admin.Members.Register(new RegisterMemberRequest
         {
             FirstName = " Gert-Jan ",
             LastName = "De Vries",
@@ -38,7 +37,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var existing = await RegisterMemberAsync();
 
-        var response = await Admin.Members.Register(new RegisterMemberCommand
+        var response = await Admin.Members.Register(new RegisterMemberRequest
         {
             FirstName = "Other",
             LastName = "Person",
@@ -55,7 +54,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     {
         var email = UniqueEmail("race");
 
-        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Admin.Members.Register(new RegisterMemberCommand
+        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Admin.Members.Register(new RegisterMemberRequest
         {
             FirstName = $"Racer{i}",
             LastName = "Test",
@@ -70,7 +69,7 @@ public class MembersApiTests(PadelApiFactory factory) : IntegrationTestBase(fact
     [Test]
     public async Task Given_InvalidFields_RegisterMember_Should_Return400WithErrorsPerField()
     {
-        var response = await Admin.Members.Register(new RegisterMemberCommand
+        var response = await Admin.Members.Register(new RegisterMemberRequest
         {
             FirstName = "",
             LastName = "Jansen",

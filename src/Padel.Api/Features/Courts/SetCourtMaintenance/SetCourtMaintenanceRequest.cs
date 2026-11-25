@@ -1,10 +1,6 @@
 namespace Padel.Api.Features.Courts;
 
-public sealed record RenameCourtRequest
-{
-    public required string Name { get; init; }
-}
-
+/// <summary>Body of <c>PUT /api/courts/{id}/maintenance</c>.</summary>
 public sealed record SetCourtMaintenanceRequest
 {
     public required bool UnderMaintenance { get; init; }

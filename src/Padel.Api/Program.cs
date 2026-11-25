@@ -3,9 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Padel.Api.Authentication;
 using Padel.Api.ErrorHandling;
-using Padel.Api.Features.Bookings;
-using Padel.Api.Features.Courts;
-using Padel.Api.Features.Members;
+using Padel.Api.Http;
 using Padel.Api.OpenApi;
 using Padel.Application;
 using Padel.Infrastructure;
@@ -60,9 +58,7 @@ if (app.Configuration.GetValue<bool>("OpenApi:Enabled"))
         .AllowAnonymous();
 }
 
-app.MapMemberEndpoints();
-app.MapCourtEndpoints();
-app.MapBookingEndpoints();
+app.MapEndpoints();
 
 if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
 {

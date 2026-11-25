@@ -52,24 +52,37 @@ The users and the password grant on `padel-scalar` are for development only.
 | `Padel.ServiceDefaults` | Cross-cutting service defaults: OpenTelemetry export, health endpoints, service discovery and HTTP resilience. |
 | `Padel.AppHost` | The Aspire app model for local development. |
 
-Code is organised by feature (vertical slices):
+Code is organised by feature (vertical slices). Every use case has its own folder in each layer, and the API follows the REPR pattern: every endpoint has its own folder with its request, the endpoint and its response.
 
 ```text
 src/Padel.Application/Features/Members/
     MemberDto.cs, MemberMappings.cs, MemberSorting.cs, IMemberRepository.cs
-    RegisterMember/        RegisterMemberCommand.cs (request + handler), RegisterMemberCommandValidator.cs
-    ListMembers/           ListMembersQuery.cs, ListMembersQueryValidator.cs
+    RegisterMember/
+        RegisterMemberCommand.cs            request + handler
+        RegisterMemberCommandValidator.cs
+    UpdateMemberProfile/ ...
+src/Padel.Api/Features/Members/
+    MembersGroup.cs                         the /api/members route group
+    RegisterMember/
+        RegisterMemberRequest.cs            the body (or query string, for lists)
+        RegisterMemberEndpoint.cs           maps the route; request → command → response
+        RegisterMemberResponse.cs
+    GetMember/
+        GetMemberEndpoint.cs                no request type: the only input is the {id} in the route
+        GetMemberResponse.cs
     ...
-src/Padel.Api/Features/Members/MemberEndpoints.cs, MemberRequests.cs
 src/Padel.Infrastructure/Features/Members/MemberRepository.cs, MemberConfiguration.cs
 ```
+
+Endpoints implement `IEndpoint` and are mapped automatically at start-up. Requests and responses are the API's own contracts. Endpoints translate them to and from the application's commands, queries and DTOs, so the HTTP contract of one endpoint can change without touching the others or the application.
 
 `Padel.ArchitectureTests` enforces the layering and the slices:
 
 - Dependencies point inwards.
 - The members and courts features do not depend on other features.
-- Every request has exactly one handler.
-- Handlers and validators are sealed.
+- Every request has exactly one handler, and exactly one endpoint with the same name.
+- API requests and responses never expose application types.
+- Handlers, validators and endpoints are sealed; endpoints are internal.
 - Entities have no public setters.
 
 ### Business rules enforced in the database

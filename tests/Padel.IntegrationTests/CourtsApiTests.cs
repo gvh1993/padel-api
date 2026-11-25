@@ -1,7 +1,7 @@
 using System.Net;
 using Padel.Api.Features.Courts;
-using Padel.Application.Features.Courts;
 using Padel.Domain.Courts;
+using Padel.Api.Features.Members;
 using Padel.IntegrationTests.Clients;
 using Padel.IntegrationTests.Infrastructure;
 using TUnit.Assertions.Enums;
@@ -16,7 +16,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     {
         var name = UniqueName("Court");
 
-        var response = await Admin.Courts.Create(new CreateCourtCommand { Name = name, Surface = "glass" });
+        var response = await Admin.Courts.Create(new CreateCourtRequest { Name = name, Surface = "glass" });
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
         var court = response.Value();
@@ -28,7 +28,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     [Test]
     public async Task Given_BlankName_CreateCourt_Should_Return400()
     {
-        var response = await Admin.Courts.Create(new CreateCourtCommand { Name = " ", Surface = "glass" });
+        var response = await Admin.Courts.Create(new CreateCourtRequest { Name = " ", Surface = "glass" });
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         await Assert.That((await response.ReadProblemAsync()).Errors.Keys).Contains("name");
@@ -48,7 +48,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
         await Assert.That(renamed.Name).IsEqualTo(newName);
         await Assert.That(maintenance.Status).IsEqualTo(CourtStatus.Maintenance);
         await Assert.That(retired.Status).IsEqualTo(CourtStatus.Retired);
-        await Assert.That(reloaded).IsEqualTo(retired);
+        await Assert.That(reloaded).IsEqualTo(new GetCourtResponse(retired.Id, retired.Name, retired.Surface, retired.Status));
     }
 
     [Test]
@@ -88,7 +88,7 @@ public class CourtsApiTests(PadelApiFactory factory) : IntegrationTestBase(facto
     {
         var member = await RegisterMemberAsync();
 
-        var response = await As(member).Courts.Create(new CreateCourtCommand { Name = UniqueName("Court"), Surface = "glass" });
+        var response = await As(member).Courts.Create(new CreateCourtRequest { Name = UniqueName("Court"), Surface = "glass" });
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
     }

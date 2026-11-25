@@ -1,5 +1,7 @@
 using System.Net;
-using Padel.Application.Features.Members;
+using Padel.Api.Features.Members;
+using Padel.Api.Features.Courts;
+using Padel.Api.Features.Bookings;
 using Padel.IntegrationTests.Infrastructure;
 
 namespace Padel.IntegrationTests;
@@ -28,7 +30,7 @@ public class AuthenticationTests(PadelApiFactory factory) : IntegrationTestBase(
     {
         var member = await RegisterMemberAsync();
 
-        var response = await As(member).Members.Register(new RegisterMemberCommand
+        var response = await As(member).Members.Register(new RegisterMemberRequest
         {
             FirstName = "Sneaky",
             LastName = "Member",

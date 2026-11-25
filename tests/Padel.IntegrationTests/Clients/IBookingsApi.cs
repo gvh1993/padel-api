@@ -1,6 +1,4 @@
 using Padel.Api.Features.Bookings;
-using Padel.Application.Features.Bookings;
-using Padel.Application.Common.Querying;
 using Padel.Domain.Bookings;
 using Refit;
 
@@ -9,22 +7,22 @@ namespace Padel.IntegrationTests.Clients;
 public interface IBookingsApi
 {
     [Post("/api/bookings")]
-    Task<IApiResponse<BookingDto>> Create([Body] CreateBookingCommand command);
+    Task<IApiResponse<CreateBookingResponse>> Create([Body] CreateBookingRequest request);
 
     [Get("/api/bookings")]
-    Task<IApiResponse<PagedResult<BookingDto>>> List([Query] BookingListParameters? parameters = null);
+    Task<IApiResponse<ListBookingsResponse>> List([Query] BookingListParameters? parameters = null);
 
     [Get("/api/bookings/{id}")]
-    Task<IApiResponse<BookingDto>> Get(Guid id);
+    Task<IApiResponse<GetBookingResponse>> Get(Guid id);
 
     [Post("/api/bookings/{id}/cancel")]
-    Task<IApiResponse<BookingDto>> Cancel(Guid id, [Body] CancelBookingRequest request);
+    Task<IApiResponse<CancelBookingResponse>> Cancel(Guid id, [Body] CancelBookingRequest request);
 
     [Post("/api/bookings/{id}/complete")]
-    Task<IApiResponse<BookingDto>> Complete(Guid id);
+    Task<IApiResponse<CompleteBookingResponse>> Complete(Guid id);
 
     [Post("/api/bookings/{id}/no-show")]
-    Task<IApiResponse<BookingDto>> MarkNoShow(Guid id);
+    Task<IApiResponse<MarkBookingNoShowResponse>> MarkNoShow(Guid id);
 }
 
 public sealed record BookingListParameters

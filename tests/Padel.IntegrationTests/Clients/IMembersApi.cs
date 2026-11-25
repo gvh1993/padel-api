@@ -1,6 +1,4 @@
 using Padel.Api.Features.Members;
-using Padel.Application.Common.Querying;
-using Padel.Application.Features.Members;
 using Padel.Domain.Members;
 using Refit;
 
@@ -9,22 +7,22 @@ namespace Padel.IntegrationTests.Clients;
 public interface IMembersApi
 {
     [Post("/api/members")]
-    Task<IApiResponse<MemberDto>> Register([Body] RegisterMemberCommand command);
+    Task<IApiResponse<RegisterMemberResponse>> Register([Body] RegisterMemberRequest request);
 
     [Get("/api/members")]
-    Task<IApiResponse<PagedResult<MemberDto>>> List([Query] MemberListParameters? parameters = null);
+    Task<IApiResponse<ListMembersResponse>> List([Query] MemberListParameters? parameters = null);
 
     [Get("/api/members/{id}")]
-    Task<IApiResponse<MemberDto>> Get(Guid id);
+    Task<IApiResponse<GetMemberResponse>> Get(Guid id);
 
     [Put("/api/members/{id}")]
-    Task<IApiResponse<MemberDto>> UpdateProfile(Guid id, [Body] UpdateMemberProfileRequest request);
+    Task<IApiResponse<UpdateMemberProfileResponse>> UpdateProfile(Guid id, [Body] UpdateMemberProfileRequest request);
 
     [Post("/api/members/{id}/suspend")]
-    Task<IApiResponse<MemberDto>> Suspend(Guid id, [Body] SuspendMemberRequest request);
+    Task<IApiResponse<SuspendMemberResponse>> Suspend(Guid id, [Body] SuspendMemberRequest request);
 
     [Post("/api/members/{id}/reactivate")]
-    Task<IApiResponse<MemberDto>> Reactivate(Guid id);
+    Task<IApiResponse<ReactivateMemberResponse>> Reactivate(Guid id);
 }
 
 public sealed record MemberListParameters

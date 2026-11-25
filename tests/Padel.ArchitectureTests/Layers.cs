@@ -16,4 +16,14 @@ internal static class Layers
     public static readonly Assembly Application = typeof(ApplicationServiceCollection).Assembly;
     public static readonly Assembly Infrastructure = typeof(InfrastructureServiceCollection).Assembly;
     public static readonly Assembly Api = typeof(Program).Assembly;
+
+    /// <summary>The REPR endpoint classes (implementations of the internal <c>Padel.Api.Http.IEndpoint</c>).</summary>
+    public static IReadOnlyList<Type> ApiEndpoints()
+    {
+        var endpointInterface = Api.GetType("Padel.Api.Http.IEndpoint", throwOnError: true)!;
+
+        return Api.GetTypes()
+            .Where(type => type is { IsClass: true, IsAbstract: false } && type.IsAssignableTo(endpointInterface))
+            .ToList();
+    }
 }

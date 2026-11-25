@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Padel.Api.Features.Courts;
 using Padel.IntegrationTests.Infrastructure;
 
 namespace Padel.IntegrationTests;

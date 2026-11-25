@@ -1,7 +1,5 @@
+using Padel.Api.Features.Bookings;
 using Padel.Api.Features.Courts;
-using Padel.Application.Features.Bookings;
-using Padel.Application.Common.Querying;
-using Padel.Application.Features.Courts;
 using Padel.Domain.Courts;
 using Refit;
 
@@ -10,25 +8,25 @@ namespace Padel.IntegrationTests.Clients;
 public interface ICourtsApi
 {
     [Post("/api/courts")]
-    Task<IApiResponse<CourtDto>> Create([Body] CreateCourtCommand command);
+    Task<IApiResponse<CreateCourtResponse>> Create([Body] CreateCourtRequest request);
 
     [Get("/api/courts")]
-    Task<IApiResponse<PagedResult<CourtDto>>> List([Query] CourtListParameters? parameters = null);
+    Task<IApiResponse<ListCourtsResponse>> List([Query] CourtListParameters? parameters = null);
 
     [Get("/api/courts/{id}")]
-    Task<IApiResponse<CourtDto>> Get(Guid id);
+    Task<IApiResponse<GetCourtResponse>> Get(Guid id);
 
     [Put("/api/courts/{id}/name")]
-    Task<IApiResponse<CourtDto>> Rename(Guid id, [Body] RenameCourtRequest request);
+    Task<IApiResponse<RenameCourtResponse>> Rename(Guid id, [Body] RenameCourtRequest request);
 
     [Put("/api/courts/{id}/maintenance")]
-    Task<IApiResponse<CourtDto>> SetMaintenance(Guid id, [Body] SetCourtMaintenanceRequest request);
+    Task<IApiResponse<SetCourtMaintenanceResponse>> SetMaintenance(Guid id, [Body] SetCourtMaintenanceRequest request);
 
     [Post("/api/courts/{id}/retire")]
-    Task<IApiResponse<CourtDto>> Retire(Guid id);
+    Task<IApiResponse<RetireCourtResponse>> Retire(Guid id);
 
     [Get("/api/courts/{id}/bookings")]
-    Task<IApiResponse<PagedResult<BookingDto>>> ListBookings(Guid id, [Query] BookingListParameters? parameters = null);
+    Task<IApiResponse<ListCourtBookingsResponse>> ListBookings(Guid id, [Query] BookingListParameters? parameters = null);
 }
 
 public sealed record CourtListParameters
