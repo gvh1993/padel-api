@@ -120,10 +120,27 @@ The endpoints map each error kind to its HTTP status with a `switch` over `Error
 
 Only truly unexpected problems are exceptions; the exception handler turns those into a 500. The architecture tests check that no layer defines its own exception types.
 
+### Booking rules
+
+The club's rules are in `Club:Bookings` (`BookingPolicy`):
+
+| Rule | Default |
+| --- | --- |
+| Time zone of the club; opening hours follow it, summer time included | `Europe/Amsterdam` |
+| Opening hours (a booking starts and ends on the same day) | 07:00 to 23:00 |
+| Bookings start and end on a multiple of | 30 minutes |
+| Upcoming bookings per member | 3 |
+| Members can cancel up to … before the start (admins until the start) | 2 hours |
+
+A booking also lasts 30 minutes to 3 hours, is in the future, and needs an active member and an available court. A member cannot be on two courts at the same time. Send an `Idempotency-Key` header with `POST /api/bookings` to retry safely: a retry with the same key returns the same booking.
+
+Changes accept `If-Match` with the `ETag` from a previous response. When the resource changed in the meantime, the API returns 412 and does not apply the change.
+
 ### Business rules enforced in the database
 
 - `IX_Members_Email`: a unique email address per member.
-- `EX_Bookings_NoOverlappingSlots`: an exclusion constraint (`btree_gist`). No two bookings that are not cancelled may overlap on the same court.
+- `EX_Bookings_NoOverlappingSlots` and `EX_Bookings_NoOverlappingMemberSlots`: exclusion constraints (`btree_gist`). Bookings that are not cancelled may not overlap on the same court, or for the same member.
+- `IX_Bookings_MemberId_IdempotencyKey` and `IX_Members_IdentityId`: one booking per idempotency key, and one member per account.
 - An `xmin` row version gives optimistic concurrency on every table.
 
 Violations of these constraints return **409 Conflict**.
